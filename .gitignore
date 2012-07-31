@@ -1,0 +1,3 @@
+# Ignore /build/ and /gen/ directories
+/build/
+/gen/
