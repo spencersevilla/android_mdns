@@ -1,0 +1,12 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1138\cocoasubrtf470
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+\margl1440\margr1440\vieww10800\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+
+\f0\b\fs24 \cf0 DNS Request/Response Packets:
+\b0 \
+\
+We should definitely follow a DNS-esque model here, perhaps even reuse some packet types? A request packet should have the ENTIRE string, always (just-in-case we get a skip or cached match) as well as the best-fit "score" of the node it's sending it to. Request packets should also include a "count" of the number of times the request has been recursed, just for sanity/reference.\
+\
+Response packets should indicate if the response is exact or a "pointer" to another DNSGroup node. In addition, should indicate how many times the request was recursed, so we can add these two numbers up and get a sense of what's going on in the system.}

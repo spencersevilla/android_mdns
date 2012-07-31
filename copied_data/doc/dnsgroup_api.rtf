@@ -1,0 +1,28 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1138\cocoasubrtf470
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+\margl1440\margr1440\vieww10800\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural
+
+\f0\b\fs24 \cf0 DNSGroup Operations API\
+\
+
+\b0 In this system, a DNSGroup is roughly equivalent to a Zone in the traditional DNS. DNSGroups can (and should!) implement functionality in a way specific to their topology, to take advantage of specific information regarding nodes, etc. This is completely fine (and is analogous to a DNS server running on top of whatever OS/hardware it prefers) as long as it can support the following set of operations:\
+\
+
+\b resolveService:
+\b0 \
+This function takes, as input, a DNS string (akin to "spencer.ccrg.ucsc") and returns a network address (IP or otherwise) suitable for routing. Similar to a DNS query-response, there are three main ways to handle this request:\
+\
+1) direct resolution: the DNSGroup is responsible for this string in its entirety, and either returns the requested address or an error that the node/service is not available.\
+\
+2) recursion: the DNSGroup is not directly responsible (and was likely chosen under the "closest fit" policy) so the DNSGroup finds (within its scope) a better-fitting node and forwards the request to this node. Eventually, when the DNSGroup receives a response (as above) it forwards it back to the original requester.\
+\
+3) non-recursive response: as above, except instead of forwarding-on the request itself, it responds to the node with a pointer to the better-fitting server. This is more transparent and allows the client itself to re-issue the request or not.\
+\
+QUESTIONS: timeout protocol? address forwarding, NAT?\
+\
+
+\b serviceRegistered/serviceRemoved:
+\b0 \
+These functions serve to register or remove a name from the DNSGroup, with the implicit assumption that the node executing this function is the node responsible for the name (and thus requests should be forwarded to this node). The only names that MUST be registered to a group are the name of the "parent" group above it (to forward requests up the tree) and the name of every "child" group below it (to forward requests down the tree). Depending on the architecture of the DNSGroup, other names (such as entire strings or cached entries) may be cached or entered into the group, but the parent and children names are the only ones absolutely necessary for successful operation.}
