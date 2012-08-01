@@ -1,7 +1,82 @@
-<?xml version="1.0" encoding="utf-8"?>
-<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+<TabHost xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_height="fill_parent"
+	android:layout_width="fill_parent"
+	android:id="@+id/tabHost" >
+
+<TabWidget
     android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
-    android:padding="10dp"
-    android:textSize="20sp" >
-</TextView>
+    android:layout_height="wrap_content"
+    android:id="@android:id/tabs" />
+
+<FrameLayout
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:id="@android:id/tabcontent" >
+
+	<RelativeLayout
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:paddingTop="70px"
+		android:id="@+id/tab1">
+	
+		<ListView
+			android:id="@+id/group_list"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content" />
+
+		<Button
+			android:id="@+id/refresh_list"
+		    android:layout_width="wrap_content"
+		    android:layout_height="wrap_content"
+		    android:layout_below="@+id/group_list"
+		    android:layout_alignParentRight="true"
+		    android:layout_marginLeft="10dip"
+		    android:text="Refresh List"
+		 	android:onClick="refreshList" />
+
+		<Button
+			android:id="@+id/new_group"
+		    android:layout_width="wrap_content"
+		    android:layout_height="wrap_content"
+		    android:layout_below="@+id/group_list"
+		    android:layout_toLeftOf="@+id/refresh_list"
+		    android:layout_marginLeft="10dip"
+		    android:text="New AdHoc Group"
+		 	android:onClick="newGroup" />
+
+		
+	</RelativeLayout>
+	
+	<RelativeLayout
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:paddingTop="70px"
+		android:id="@+id/tab2">
+	
+		<ListView
+			android:id="@+id/service_list"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content" />
+	
+		<Button
+			android:id="@+id/delete_service"
+		    android:layout_width="wrap_content"
+		    android:layout_height="wrap_content"
+		    android:layout_below="@+id/service_list"
+		    android:layout_alignParentRight="true"
+		    android:layout_marginLeft="10dip"
+		    android:text="Delete Service" />
+		
+		<Button
+			android:id="@+id/new_service"
+		    android:layout_width="wrap_content"
+		    android:layout_height="wrap_content"
+		    android:layout_below="@+id/service_list"
+		    android:layout_toLeftOf="@+id/delete_service"
+		    android:layout_marginLeft="10dip"
+		    android:text="New Service" />
+
+	</RelativeLayout>
+
+</FrameLayout>
+</TabHost>
