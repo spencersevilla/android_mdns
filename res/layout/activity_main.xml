@@ -72,7 +72,8 @@
 		    android:layout_below="@+id/service_list"
 		    android:layout_alignParentRight="true"
 		    android:layout_marginLeft="10dip"
-		    android:text="Delete Service" />
+		    android:text="Delete Service"
+			android:onClick="deleteService" />
 		
 		<Button
 			android:id="@+id/new_service"
@@ -81,7 +82,8 @@
 		    android:layout_below="@+id/service_list"
 		    android:layout_toLeftOf="@+id/delete_service"
 		    android:layout_marginLeft="10dip"
-		    android:text="New Service" />
+		    android:text="New Service"
+			android:onClick="newService" />
 
 	</RelativeLayout>
 

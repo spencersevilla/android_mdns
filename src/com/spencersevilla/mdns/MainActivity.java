@@ -12,6 +12,10 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.CheckedTextView;
 import android.widget.TabHost;
 import android.widget.TabHost.TabSpec;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.widget.EditText;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -68,7 +72,7 @@ public class MainActivity extends Activity {
 		groupListView.setItemsCanFocus(false);
 		groupListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
 
-		for (int i = 0; i < mdns.groupList.size()) {
+		for (int i = 0; i < mdns.groupList.size(); i++) {
 			groupListView.setItemChecked(i, true);
 		}
 
@@ -130,5 +134,44 @@ public class MainActivity extends Activity {
 	// when "New AdHoc Group" button clicked
 	public void newGroup(View view) {
 		System.out.println("hi!");
+	}
+	
+	public void newService(View view) {
+		newServicePopup();
+	}
+	
+	public void deleteService(View view) {
+		System.out.println("hi!");
+	}
+	
+	private void newServicePopup() {
+		AlertDialog.Builder helpBuilder = new AlertDialog.Builder(this);
+		helpBuilder.setTitle("Create Service");
+		helpBuilder.setMessage("Enter the name of the service");
+		
+		final EditText input = new EditText(this);
+		input.setSingleLine();
+		input.setText("");
+		helpBuilder.setView(input);
+		
+		helpBuilder.setPositiveButton("Create Service", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) {
+				String name = input.getText().toString();
+				if (!name.equals("")) {
+					mdns.createService(name);
+					serviceAdapter.notifyDataSetChanged();
+				}
+			}
+		});
+
+		helpBuilder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) {
+			// Do nothing
+			}
+		});
+
+		// Remember, create doesn't show the dialog
+		AlertDialog helpDialog = helpBuilder.create();
+		helpDialog.show();
 	}
 }
