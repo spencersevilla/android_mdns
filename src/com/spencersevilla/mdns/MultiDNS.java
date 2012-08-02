@@ -18,7 +18,7 @@ public class MultiDNS {
     
 	protected ArrayList<DNSGroup> groupList;
 	protected ArrayList<Service> serviceList;
-	protected ArrayList<DNSGroup> otherGroups;
+	protected ArrayList<DNSGroup> allGroups;
 
 	MultiDNS() {
         
@@ -26,7 +26,7 @@ public class MultiDNS {
         
 		groupList = new ArrayList<DNSGroup>();
 		serviceList = new ArrayList<Service>();
-		otherGroups = new ArrayList<DNSGroup>();
+		allGroups = new ArrayList<DNSGroup>();
 
 		xstream = new XStream();
 		xstream.alias("service", Service.class);
@@ -142,13 +142,10 @@ public class MultiDNS {
 		
 		// don't add groups we've already seen before (member or otherwise!)
 		for (DNSGroup g : groups) {
-			if (groupList.contains(g)) {
+			if (allGroups.contains(g)) {
 				continue;
 			}
-			if (otherGroups.contains(g)) {
-				continue;
-			}
-			otherGroups.add(g);
+			allGroups.add(g);
 		}
 	}
 	
@@ -185,20 +182,24 @@ public class MultiDNS {
 		createGroup(fname);
 	}
 	
-	public void deleteGroup(DNSGroup g) {
+	public void leaveGroup(DNSGroup g) {
 		g.exit();
 
 		groupList.remove(g);
-		
-		// saveGroups();
 	}
 	
 	public void joinGroup(DNSGroup group) {
+		if (!allGroups.contains(group) || groupList.contains(group)) {
+			// cannot join group we're already a member of
+			// neither can we join a group we can't see!
+			return;
+		}
+		
+		
 		if (!group.joinGroup()) {
 			return;
 		}
 		
-		otherGroups.remove(group);
 		groupList.add(group);
 		
 		// tell it about already existing services

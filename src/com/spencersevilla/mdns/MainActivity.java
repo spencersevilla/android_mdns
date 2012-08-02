@@ -24,11 +24,9 @@ public class MainActivity extends Activity {
 	MultiDNS mdns;
 
 	ListView groupListView;
-	ListView otherGroupsListView;
 	ListView serviceListView;
 
 	ArrayAdapter<DNSGroup> groupAdapter;
-	ArrayAdapter<DNSGroup> otherGroupsAdapter;
 	ArrayAdapter<Service> serviceAdapter;
 	
  	TabHost tabHost;
@@ -58,49 +56,32 @@ public class MainActivity extends Activity {
 		
 		// Hook up the UI
 		initializeGroupList();
-		initializeOtherGroupsList();
 		initializeServiceList();
 	}
 	
 	private void initializeGroupList() {
+		
 		groupListView = (ListView)findViewById(R.id.group_list);
 		groupAdapter = new ArrayAdapter<DNSGroup>(this, 
-				android.R.layout.simple_list_item_multiple_choice, mdns.groupList);
+				android.R.layout.simple_list_item_multiple_choice, mdns.allGroups);
 		groupAdapter.setNotifyOnChange(true);
 		
 		groupListView.setAdapter(groupAdapter);
 		groupListView.setItemsCanFocus(false);
 		groupListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
 
-		for (int i = 0; i < mdns.groupList.size(); i++) {
-			groupListView.setItemChecked(i, true);
-		}
-
 		groupListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-			@Override
-			public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
+			@Override public void onItemClick(AdapterView<?> arg0, View arg1, int position, long id) {
 				CheckedTextView ctv = (CheckedTextView)arg1;
-				System.out.println("hi!");
-			}
-		});
-	}
-	
-	private void initializeOtherGroupsList() {
-		
-		otherGroupsListView = (ListView)findViewById(R.id.other_groups_list);
-		otherGroupsAdapter = new ArrayAdapter<DNSGroup>(this, 
-				android.R.layout.simple_list_item_multiple_choice, mdns.otherGroups);
-		otherGroupsAdapter.setNotifyOnChange(true);
-		
-		otherGroupsListView.setAdapter(otherGroupsAdapter);
-		otherGroupsListView.setItemsCanFocus(false);
-		otherGroupsListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
-
-		otherGroupsListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-			@Override
-			public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
-				CheckedTextView ctv = (CheckedTextView)arg1;
-				System.out.println("hi!");
+				DNSGroup dg = (DNSGroup) groupListView.getItemAtPosition(position);
+				if (ctv.isChecked()) {
+					mdns.leaveGroup(dg);
+				} else {
+					System.out.println("JOINING GROUP!!!");
+					mdns.joinGroup(dg);
+				}
+				
+				groupAdapter.notifyDataSetChanged();
 			}
 		});
 	}
@@ -126,9 +107,7 @@ public class MainActivity extends Activity {
 	// when "Refresh List" button clicked
 	public void refreshList(View view) {
 		mdns.findOtherGroups();
-		// there's no way this command will result in us joining or leaving groups
-		// so we only have to call this for the otherGroupsAdapter
-		otherGroupsAdapter.notifyDataSetChanged();
+		groupAdapter.notifyDataSetChanged();
 	}
 
 	// when "New AdHoc Group" button clicked
