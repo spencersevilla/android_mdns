@@ -17,13 +17,15 @@ import java.util.Arrays;
 
 public class MainActivity extends Activity {
  
+	MultiDNS mdns;
+
 	ListView groupListView;
+	ListView otherGroupsListView;
 	ListView serviceListView;
-	
-	ArrayList<String> groupList;
-	ArrayAdapter<String> groupAdapter;
-	
-	ArrayList<String> serviceList;
+
+	ArrayAdapter<DNSGroup> groupAdapter;
+	ArrayAdapter<DNSGroup> otherGroupsAdapter;
+	ArrayAdapter<Service> serviceAdapter;
 	
  	TabHost tabHost;
 
@@ -47,22 +49,28 @@ public class MainActivity extends Activity {
 		spec2.setIndicator("Services Advertised");
 		tabHost.addTab(spec2);
 		
+		// Start the main logic!
+		mdns = new MultiDNS();
+		
+		// Hook up the UI
 		initializeGroupList();
+		initializeOtherGroupsList();
 		initializeServiceList();
 	}
 	
 	private void initializeGroupList() {
-		groupList = new ArrayList<String>(Arrays.asList(
-				"ucsc.global", "parc.global"));
-		
 		groupListView = (ListView)findViewById(R.id.group_list);
-		groupAdapter = new ArrayAdapter<String>(this, 
-				android.R.layout.simple_list_item_multiple_choice, groupList);
+		groupAdapter = new ArrayAdapter<DNSGroup>(this, 
+				android.R.layout.simple_list_item_multiple_choice, mdns.groupList);
 		groupAdapter.setNotifyOnChange(true);
 		
 		groupListView.setAdapter(groupAdapter);
 		groupListView.setItemsCanFocus(false);
 		groupListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+
+		for (int i = 0; i < mdns.groupList.size()) {
+			groupListView.setItemChecked(i, true);
+		}
 
 		groupListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 			@Override
@@ -73,13 +81,31 @@ public class MainActivity extends Activity {
 		});
 	}
 	
+	private void initializeOtherGroupsList() {
+		
+		otherGroupsListView = (ListView)findViewById(R.id.other_groups_list);
+		otherGroupsAdapter = new ArrayAdapter<DNSGroup>(this, 
+				android.R.layout.simple_list_item_multiple_choice, mdns.otherGroups);
+		otherGroupsAdapter.setNotifyOnChange(true);
+		
+		otherGroupsListView.setAdapter(otherGroupsAdapter);
+		otherGroupsListView.setItemsCanFocus(false);
+		otherGroupsListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+
+		otherGroupsListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+			@Override
+			public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
+				CheckedTextView ctv = (CheckedTextView)arg1;
+				System.out.println("hi!");
+			}
+		});
+	}
+
 	private void initializeServiceList() {
-		serviceList = new ArrayList<String>(Arrays.asList(
-				"spencer", "printer"));
 		
 		serviceListView = (ListView)findViewById(R.id.service_list);
-		ArrayAdapter<String> serviceAdapter = new ArrayAdapter<String>(this, 
-				android.R.layout.simple_list_item_multiple_choice, serviceList);
+		serviceAdapter = new ArrayAdapter<Service>(this, 
+				android.R.layout.simple_list_item_multiple_choice, mdns.serviceList);
 		serviceListView.setAdapter(serviceAdapter);
 		serviceListView.setItemsCanFocus(false);
 		serviceListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
@@ -95,8 +121,10 @@ public class MainActivity extends Activity {
 	
 	// when "Refresh List" button clicked
 	public void refreshList(View view) {
-		groupList.add("test1.test2.global");
-		groupAdapter.notifyDataSetChanged();
+		mdns.findOtherGroups();
+		// there's no way this command will result in us joining or leaving groups
+		// so we only have to call this for the otherGroupsAdapter
+		otherGroupsAdapter.notifyDataSetChanged();
 	}
 
 	// when "New AdHoc Group" button clicked

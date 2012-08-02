@@ -1,5 +1,5 @@
 // Copyright (c) 1999-2004 Brian Wellington (bwelling@xbill.org)
-package multiDNS;
+package com.spencersevilla.mdns;
 
 import java.io.*;
 import java.net.*;
@@ -90,7 +90,7 @@ jnamed(String conffile) throws IOException, ZoneTransferException {
 		}
 
 		if (ports.size() == 0)
-			ports.add(new Integer(53));
+			ports.add(new Integer(5050));
 
 		if (addresses.size() == 0)
 			addresses.add(Address.getByAddress("0.0.0.0"));

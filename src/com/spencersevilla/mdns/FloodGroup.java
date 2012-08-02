@@ -1,4 +1,4 @@
-package multiDNS;
+package com.spencersevilla.mdns;
 
 import java.io.*;
 import java.net.*;

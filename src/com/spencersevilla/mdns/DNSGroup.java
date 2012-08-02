@@ -1,4 +1,4 @@
-package multiDNS;
+package com.spencersevilla.mdns;
 
 import java.util.*;
 
@@ -20,6 +20,20 @@ public abstract class DNSGroup {
 		
 		// root hierarchy now at the front! (like typical filesystem)
 		Collections.reverse(Arrays.asList(groups));
+	}
+	
+	// This function identifies every DNSGroup uniquely using its fullname!
+	// We might want to cover some other strcmps for formatting/subgroups/etc
+	@Override public boolean equals(Object otherObject) {
+		// check for self-comparison
+		if ( this == otherObject ) return true;
+		// check for null and ensure class membership
+		if ( !(otherObject instanceof DNSGroup) ) return false;
+		
+		DNSGroup that = (DNSGroup) otherObject;
+		
+		// traps for null-cases 
+		return this.fullName == null ? that.fullName == null : this.fullName.equals(that.fullName);
 	}
 	
 	public static final DNSGroup createGroupFromString(MultiDNS m, String arg_string) {

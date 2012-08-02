@@ -1,7 +1,5 @@
-package multiDNS;
+package com.spencersevilla.mdns;
 
-import javax.swing.JFrame;
-import javax.swing.JLabel;
 import java.io.*;
 import java.net.*;
 import java.util.*;
@@ -11,36 +9,29 @@ import com.thoughtworks.xstream.XStream;
 public class MultiDNS {
     
     protected BootstrapServer is;
-    protected SwingGui gui;
-	protected DNSGroup floodGroup;
 	protected jnamed dns_server;
 
 	// For User Preferences
 	private XStream xstream;
 	private static final String service_file = "config/services.xml";
 	private static final String group_file = "config/groups.xml";
-	
-	public static void main(String args[]) {
-		new MultiDNS(args);
-	}
     
-	MultiDNS(String args[]) {
+	protected ArrayList<DNSGroup> groupList;
+	protected ArrayList<Service> serviceList;
+	protected ArrayList<DNSGroup> otherGroups;
+
+	MultiDNS() {
         
         System.out.println("Starting Up...");
         
+		groupList = new ArrayList<DNSGroup>();
+		serviceList = new ArrayList<Service>();
+		otherGroups = new ArrayList<DNSGroup>();
+
 		xstream = new XStream();
 		xstream.alias("service", Service.class);
 		xstream.alias("group", DNSGroup.class);
 		xstream.alias("list", List.class);
-				
-		// launch gui
-		gui = new SwingGui(this);
-
-		// command-line option to join/create/ignore the chord group
-		String command = "node";
-		if (args.length > 0) {
-			command = args[0];
-		}
 		
 		System.out.println("operating as a node, NOT joining any chords...");
 		
@@ -53,7 +44,7 @@ public class MultiDNS {
 		
         // start a logger?
 
-		// finally, listen for API calls
+		//finally, listen for API calls
 		try {
 			dns_server = new jnamed(this);
 		}
@@ -61,17 +52,7 @@ public class MultiDNS {
 			System.out.println(e);
 		}
 	}
-	
-	public DNSGroup[] dnsGroups() {
-		DNSGroup[] dg_array = Arrays.copyOf(gui.listModel.toArray(), gui.listModel.toArray().length, DNSGroup[].class);
-		return dg_array;
-	}
-
-	public Service[] services() {
-		Service[] service_array = Arrays.copyOf(gui.serviceListModel.toArray(), gui.serviceListModel.toArray().length, Service[].class);
-		return service_array;
-	}
-	
+		
 	private void loadServices() {		
 		FileInputStream fis = null;
 		ObjectInputStream in = null;
@@ -120,7 +101,7 @@ public class MultiDNS {
 	}
 	
 	private void saveServices() {
-		Object[] objs = gui.serviceListModel.toArray();
+		Object[] objs = serviceList.toArray();
 		String xml = xstream.toXML(objs);
 		
 		FileOutputStream fos = null;
@@ -152,9 +133,23 @@ public class MultiDNS {
 		}
 	}
 	
-	public DNSGroup[] findOtherGroups() {
-		DNSGroup[] groups = is.findGroups();
-		return groups;
+	public void findOtherGroups() {
+		ArrayList<DNSGroup> groups = is.findGroups();
+		
+		if (groups == null) {
+			return;
+		}
+		
+		// don't add groups we've already seen before (member or otherwise!)
+		for (DNSGroup g : groups) {
+			if (groupList.contains(g)) {
+				continue;
+			}
+			if (otherGroups.contains(g)) {
+				continue;
+			}
+			otherGroups.add(g);
+		}
 	}
 	
 	public void createGroup(String gname) {
@@ -162,10 +157,10 @@ public class MultiDNS {
 
 		FloodGroup group = new FloodGroup(this, gname);
 		group.start();
-		gui.listModel.addElement(group);
+		groupList.add(group);
 			
 		// tell it about already existing services
-		for (Service s : services()) {
+		for (Service s : serviceList) {
 			group.serviceRegistered(s);
 		}
 		
@@ -192,8 +187,8 @@ public class MultiDNS {
 	
 	public void deleteGroup(DNSGroup g) {
 		g.exit();
-		
-		gui.listModel.removeElement(g);
+
+		groupList.remove(g);
 		
 		// saveGroups();
 	}
@@ -203,11 +198,11 @@ public class MultiDNS {
 			return;
 		}
 		
-		gui.otherGroupsListModel.removeElement(group);
-		gui.listModel.addElement(group);
+		otherGroups.remove(group);
+		groupList.add(group);
 		
 		// tell it about already existing services
-		for (Service s : services()) {
+		for (Service s : serviceList) {
 			group.serviceRegistered(s);
 		}
 		
@@ -219,25 +214,25 @@ public class MultiDNS {
 		//TODO: CHECK FOR DUPLICATES!
 		
 		// alert all DNSGroup instances
-		for (DNSGroup group : dnsGroups()) {
+		for (DNSGroup group : groupList) {
 			group.serviceRegistered(s);
 		}
+
+		serviceList.add(s);
 		
-		gui.serviceListModel.addElement(s);
-		
-		saveServices();
+		// saveServices();
 	}
 	
 	public void deleteService(Service s) {
 		
 		// alert all DNSGroup instances
-		for (DNSGroup group : dnsGroups()) {
+		for (DNSGroup group : groupList) {
 			group.serviceRemoved(s);
 		}
 		
-		gui.serviceListModel.removeElement(s);
+		serviceList.remove(s);
 		
-		saveServices();
+		// saveServices();
 	}
 	
 	public InetAddress resolveService(String servicename) {
@@ -278,7 +273,7 @@ public class MultiDNS {
 		DNSGroup bestChoice = null;
 		int highScore = 0;
 		int score;
-		for (DNSGroup group : dnsGroups()) {
+		for (DNSGroup group : groupList) {
 			score = group.calculateScore(servicename);
 			if (score > highScore) {
 				bestChoice = group;

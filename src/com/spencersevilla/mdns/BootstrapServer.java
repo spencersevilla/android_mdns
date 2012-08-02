@@ -1,4 +1,4 @@
-package multiDNS;
+package com.spencersevilla.mdns;
 
 import java.io.*;
 import java.net.*;
@@ -81,7 +81,7 @@ public class BootstrapServer implements Runnable {
 	
 	// Generate response to GRP_REQ packets
 	private String parseGRP(String groupname) {
-		for(DNSGroup group : mdns.dnsGroups()) {
+		for(DNSGroup group : mdns.groupList) {
 			if (group.name.equals(groupname)) {
 				String opts = group.getResponse();
 				if (opts != null) {
@@ -100,7 +100,7 @@ public class BootstrapServer implements Runnable {
 		String opts = null;
 		ArrayList entries = new ArrayList();
 		// go through the list of groups and get everyone that wants to respond
-		for (DNSGroup group : mdns.dnsGroups()) {
+		for (DNSGroup group : mdns.groupList) {
 			opts = group.getResponse();
 			if (opts != null) {
 				s = new String(group.id + ":" + group.fullName + ":" + opts);
@@ -173,11 +173,11 @@ public class BootstrapServer implements Runnable {
 		return null;
 	}
 	
-	public DNSGroup[] findGroups() {
+	public ArrayList<DNSGroup> findGroups() {
 		String bstring = new String("FIND_GRP" + token1);
 		byte buf[] = bstring.getBytes();
 		byte buf2[] = new byte[1024];
-		ArrayList returnArray = new ArrayList();
+		ArrayList<DNSGroup> returnArray = new ArrayList<DNSGroup>();
 		
         DatagramPacket pack2 = new DatagramPacket(buf2, buf2.length);
 
@@ -223,16 +223,13 @@ public class BootstrapServer implements Runnable {
 			// and that they all correspond to  a DNSGroup. We must now translate
 			// each "args" entry to an appropriate DNSGroup object.
 			for(int i = 1; i < args.length - 1; i++) {
-				// WARNING! look for groups YOU'RE a part of
-				// ALSO look out for groups returned multiple times!
 				DNSGroup group = DNSGroup.createGroupFromString(mdns, args[i]);
 				if (group != null) {
 					returnArray.add(group);
 				}
 			}
 			
-			DNSGroup[] ret = Arrays.copyOf(returnArray.toArray(), returnArray.toArray().length, DNSGroup[].class);
-			return ret;
+			return returnArray;
 			
 		} catch (InterruptedIOException iioe) {
 			System.out.println("findGroups timed out...");
