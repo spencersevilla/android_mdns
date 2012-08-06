@@ -1,4 +1,5 @@
-package com.spencersevilla.mdns;
+package com.spencersevilla.android;
+import com.spencersevilla.mdns.*;
 
 import android.app.Activity;
 import android.os.Bundle;
