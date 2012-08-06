@@ -18,6 +18,7 @@ import android.widget.EditText;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.net.InetAddress;
 
 public class MainActivity extends Activity {
  
@@ -112,7 +113,7 @@ public class MainActivity extends Activity {
 
 	// when "New AdHoc Group" button clicked
 	public void newGroup(View view) {
-		System.out.println("hi!");
+		newGroupPopup();
 	}
 	
 	public void newService(View view) {
@@ -123,6 +124,15 @@ public class MainActivity extends Activity {
 		System.out.println("hi!");
 	}
 	
+	public void resolveService(View view) {
+		InetAddress ia = mdns.resolveService("spencer.test.adhoc.spencer");
+		if (ia != null) {
+			System.out.println("success!");
+		} else {
+			System.out.println("failed!");
+		}
+	}
+
 	private void newServicePopup() {
 		AlertDialog.Builder helpBuilder = new AlertDialog.Builder(this);
 		helpBuilder.setTitle("Create Service");
@@ -139,6 +149,38 @@ public class MainActivity extends Activity {
 				if (!name.equals("")) {
 					mdns.createService(name);
 					serviceAdapter.notifyDataSetChanged();
+				}
+			}
+		});
+
+		helpBuilder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) {
+			// Do nothing
+			}
+		});
+
+		// Remember, create doesn't show the dialog
+		AlertDialog helpDialog = helpBuilder.create();
+		helpDialog.show();
+	}
+	
+	private void newGroupPopup() {
+		AlertDialog.Builder helpBuilder = new AlertDialog.Builder(this);
+		helpBuilder.setTitle("Create Group");
+		helpBuilder.setMessage("Enter the name of the group");
+		
+		final EditText input = new EditText(this);
+		input.setSingleLine();
+		input.setText("");
+		helpBuilder.setView(input);
+		
+		helpBuilder.setPositiveButton("Create Group", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) {
+				String name = input.getText().toString();
+				if (!name.equals("")) {
+					mdns.createAdHocGroup(name);
+					groupAdapter.notifyDataSetChanged();
+					groupListView.setItemChecked(mdns.allGroups.size() - 1, true);
 				}
 			}
 		});

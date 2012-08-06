@@ -176,68 +176,81 @@ public class BootstrapServer implements Runnable {
 	public ArrayList<DNSGroup> findGroups() {
 		String bstring = new String("FIND_GRP" + token1);
 		byte buf[] = bstring.getBytes();
-		byte buf2[] = new byte[1024];
+		byte buf2[] = null;
 		ArrayList<DNSGroup> returnArray = new ArrayList<DNSGroup>();
 		
-        DatagramPacket pack2 = new DatagramPacket(buf2, buf2.length);
+		MulticastSocket s = null;
+        DatagramPacket pack2 = null;
 
 		try {
 			DatagramPacket pack = new DatagramPacket(buf, buf.length, InetAddress.getByName(addr), port);
 	        
-			MulticastSocket s = new MulticastSocket();
-			s.setSoTimeout(1000);
+			s = new MulticastSocket();
+			
+			String data;
+			String[] args;
+			String[] params;
+			int count;
 			
 	        s.send(pack);
-			s.receive(pack2);
-			// try-catch-exception breaks here
-			s.close();
+			s.setSoTimeout(2000);
+			long endTimeMillis = System.currentTimeMillis() + 2000;
 			
-			String data = new String(pack2.getData());
-			System.out.println("Data received: " + data);
-			
-			String[] args = data.split(token2);
-			if (args.length < 1) {
-				System.out.println("findGroups error: args.length < 1!");
-				return null;
-			}
-			
-			String[] params = args[0].split(token1);
-			
-			if (params.length < 2) {
-				System.out.println("findGroups error: params.length = " + params.length + ", expecting value of 2");
-				return null;
-			}
-			if (!params[0].equals("GROUPS")) {
-				System.out.println("findGroups error: expecting GROUPS, found " + params[0] + " instead.");
-				return null;
-			}
-			
-			int count = Integer.parseInt(params[1]);
-			// args.length will be two higher: one for first-entry, one for last (string.split relic)
-			if (args.length != count + 2) {
-				System.out.println("error: incorrect count! " + args.length + " items found, supposed to be " + count + " items.");
-				return null;
-			}
-			
-			// Here we know that we have an appropriate number of "args" content 
-			// and that they all correspond to  a DNSGroup. We must now translate
-			// each "args" entry to an appropriate DNSGroup object.
-			for(int i = 1; i < args.length - 1; i++) {
-				DNSGroup group = DNSGroup.createGroupFromString(mdns, args[i]);
-				if (group != null) {
-					returnArray.add(group);
+			while (System.currentTimeMillis() < endTimeMillis) {
+				buf2 = new byte[1024];
+				pack2 = new DatagramPacket(buf2, buf2.length);
+				s.receive(pack2);
+				
+				data = new String(pack2.getData());
+				System.out.println("Data received: " + data);
+
+				args = data.split(token2);
+				if (args.length < 1) {
+					System.out.println("findGroups error: args.length < 1!");
+					return null;
 				}
+
+				params = args[0].split(token1);
+
+				if (params.length < 2) {
+					System.out.println("findGroups error: params.length = " + params.length + ", expecting value of 2");
+					continue;
+				}
+				if (!params[0].equals("GROUPS")) {
+					System.out.println("findGroups error: expecting GROUPS, found " + params[0] + " instead.");
+					continue;
+				}
+
+				count = Integer.parseInt(params[1]);
+				// args.length will be two higher: one for first-entry, one for last (string.split relic)
+				if (args.length != count + 2) {
+					System.out.println("error: incorrect count! " + args.length + " items found, supposed to be " + count + " items.");
+					continue;
+				}
+
+				// Here we know that we have an appropriate number of "args" content 
+				// and that they all correspond to  a DNSGroup. We must now translate
+				// each "args" entry to an appropriate DNSGroup object.
+				for(int i = 1; i < args.length - 1; i++) {
+					DNSGroup group = DNSGroup.createGroupFromString(mdns, args[i]);
+					if (group != null) {
+						returnArray.add(group);
+					}
+				}
+				
 			}
-			
-			return returnArray;
-			
+							
 		} catch (InterruptedIOException iioe) {
-			System.out.println("findGroups timed out...");
-			return null;
+			// do nothing here, this is okay
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return null;
+		
+		// close the socket and return everything we've found!
+		if (s != null) {
+			s.close();
+		}
+		return returnArray;
 	}
 	
 	public void createGroup() {

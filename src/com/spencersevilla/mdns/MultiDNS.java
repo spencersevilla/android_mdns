@@ -33,8 +33,6 @@ public class MultiDNS {
 		xstream.alias("group", DNSGroup.class);
 		xstream.alias("list", List.class);
 		
-		System.out.println("operating as a node, NOT joining any chords...");
-		
         // load app data
 		// loadServices();
 		// loadGroups();
@@ -88,7 +86,7 @@ public class MultiDNS {
 			for (Object o : objs) {
 				DNSGroup g = (DNSGroup) o;
 				// TODO: clean-up this method?
-				createGroup(g.name);
+				// createGroup(g.name);
 			}
 			in.close();
 
@@ -149,13 +147,22 @@ public class MultiDNS {
 		}
 	}
 	
-	public void createGroup(String gname) {
+	private void createGroup(String gname, int id) {
 		// here we already assume the group is not around
-
-		FloodGroup group = new FloodGroup(this, gname);
+		DNSGroup group = null;
+		
+		if (id == 0) {
+			group = new FloodGroup(this, gname);
+		}
+		
+		if (group == null) {
+			return;
+		}
+		
 		group.start();
 		groupList.add(group);
-			
+		allGroups.add(group);
+		
 		// tell it about already existing services
 		for (Service s : serviceList) {
 			group.serviceRegistered(s);
@@ -174,12 +181,12 @@ public class MultiDNS {
 		String fname = name + "." + parent.fullName;
 		
 		// here we create the according DNSGroup
-		createGroup(fname);
+		createGroup(fname, 0);
 	}
 	
 	public void createAdHocGroup(String name) {
 		String fname = name + ".adhoc";
-		createGroup(fname);
+		createGroup(fname, 0);
 	}
 	
 	public void leaveGroup(DNSGroup g) {
@@ -189,12 +196,10 @@ public class MultiDNS {
 	}
 	
 	public void joinGroup(DNSGroup group) {
-		if (!allGroups.contains(group) || groupList.contains(group)) {
+		if (groupList.contains(group)) {
 			// cannot join group we're already a member of
-			// neither can we join a group we can't see!
 			return;
 		}
-		
 		
 		if (!group.joinGroup()) {
 			return;
@@ -240,12 +245,18 @@ public class MultiDNS {
 		// FIRST: determine scope of address and who to forward it to
 		// IF there is no acceptable/reachable group, complain!
 
-		if (!servicename.endsWith("spencer.")) {
+		// trim trailing dot just-in-case
+		if (servicename.endsWith(".")) {
+			servicename = servicename.substring(0, servicename.length() - 1);
+		}
+
+		// make sure we trapped appropriately from jnamed
+		if (!servicename.endsWith("spencer")) {
 			System.out.println("multiDNS: received incorrect servicename: " + servicename);
 			return null;
 		}
 		// ok now remove the dns format-key from it
-		String trimName = servicename.substring(0, servicename.length() - 8);
+		String trimName = servicename.substring(0, servicename.length() - 7);
 		
 		DNSGroup group = findResponsibleGroup(trimName);
 		if (group == null) {
@@ -255,7 +266,7 @@ public class MultiDNS {
 			return null;
 		}
 		
-		String addr = group.resolveService(servicename);
+		String addr = group.resolveService(trimName);
 			if (addr != null) {
 				try {
 					return InetAddress.getByName(addr);

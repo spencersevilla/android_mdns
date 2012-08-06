@@ -5,7 +5,7 @@
 
 <TabWidget
     android:layout_width="fill_parent"
-    android:layout_height="50px"
+    android:layout_height="wrap_content"
     android:id="@android:id/tabs" />
 
 <FrameLayout
@@ -77,6 +77,16 @@
 		    android:layout_marginLeft="10dip"
 		    android:text="New Service"
 			android:onClick="newService" />
+			
+		<Button
+			android:id="@+id/resolve_service"
+		    android:layout_width="wrap_content"
+		    android:layout_height="wrap_content"
+		    android:layout_below="@+id/delete_service"
+		    android:layout_alignParentRight="true"
+		    android:layout_marginLeft="10dip"
+		    android:text="Resolve Service"
+			android:onClick="resolveService" />
 
 	</RelativeLayout>
 
