@@ -245,18 +245,18 @@ public class MultiDNS {
 		// FIRST: determine scope of address and who to forward it to
 		// IF there is no acceptable/reachable group, complain!
 
-		// trim trailing dot just-in-case
+		// look out for trailing dot just-in-case (trim if exists)
 		if (servicename.endsWith(".")) {
 			servicename = servicename.substring(0, servicename.length() - 1);
 		}
 
 		// make sure we trapped appropriately from jnamed
-		if (!servicename.endsWith("spencer")) {
+		if (!servicename.endsWith(".spencer")) {
 			System.out.println("multiDNS: received incorrect servicename: " + servicename);
 			return null;
 		}
 		// ok now remove the dns format-key from it
-		String trimName = servicename.substring(0, servicename.length() - 7);
+		String trimName = servicename.substring(0, servicename.length() - 8);		
 		
 		DNSGroup group = findResponsibleGroup(trimName);
 		if (group == null) {
@@ -277,13 +277,32 @@ public class MultiDNS {
 		return null;
 	}
 	
-	private DNSGroup findResponsibleGroup(String servicename) {
+	protected String forwardRequest(String servicename, int minScore) {
+		// forward or rebroadcast the request to a different group if possible
+		// minScore ensures that we don't loop: we can only forward to another group
+		// if it's a better match than the group this request came from.
+		
+		DNSGroup g = findResponsibleGroup(servicename, minScore);
+		if (g == null) {
+			System.out.println("cannot forward!");
+			return null;
+		}
+		
+		System.out.println("FORWARDING REQUEST: " + servicename + " TO GROUP: " + g);
+		return g.resolveService(servicename);
+	}
+	
+	protected DNSGroup findResponsibleGroup(String servicename) {
+		return findResponsibleGroup(servicename, 0);
+	}
+	
+	protected DNSGroup findResponsibleGroup(String servicename, int minScore) {
 
 		// cycle through all group memberships
 		// give each group a "score" based on longest-prefix
 		// then choose the best choice! (null if none accceptable)
 		DNSGroup bestChoice = null;
-		int highScore = 0;
+		int highScore = minScore;
 		int score;
 		for (DNSGroup group : groupList) {
 			score = group.calculateScore(servicename);
@@ -293,7 +312,11 @@ public class MultiDNS {
 			}
 		}
 		
-		System.out.println("findResponsibleGroup chose: " + bestChoice + "for string: " + servicename + "with score: " + highScore);
+		// if (bestChoice != null)
+		// 	System.out.println("findResponsibleGroup chose: " + bestChoice + "for string: " + servicename + "with score: " + highScore);
+		
+		System.out.println("findResponsibleGroup returned!");
+		
 		return bestChoice;
 	}
 		

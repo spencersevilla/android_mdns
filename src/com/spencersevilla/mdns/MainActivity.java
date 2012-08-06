@@ -125,12 +125,7 @@ public class MainActivity extends Activity {
 	}
 	
 	public void resolveService(View view) {
-		InetAddress ia = mdns.resolveService("spencer.test.adhoc.spencer");
-		if (ia != null) {
-			System.out.println("success!");
-		} else {
-			System.out.println("failed!");
-		}
+		resolveServicePopup();
 	}
 
 	private void newServicePopup() {
@@ -195,4 +190,40 @@ public class MainActivity extends Activity {
 		AlertDialog helpDialog = helpBuilder.create();
 		helpDialog.show();
 	}
+	
+	private void resolveServicePopup() {
+		AlertDialog.Builder helpBuilder = new AlertDialog.Builder(this);
+		helpBuilder.setTitle("Resolve Service");
+		helpBuilder.setMessage("Enter the name of the service");
+		
+		final EditText input = new EditText(this);
+		input.setSingleLine();
+		input.setText("");
+		helpBuilder.setView(input);
+		
+		helpBuilder.setPositiveButton("Resolve Service", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) {
+				String name = input.getText().toString();
+				if (!name.equals("")) {
+					InetAddress addr = mdns.resolveService(name + ".spencer");
+					if (addr == null) {
+						System.out.println("failure!");
+					} else {
+						System.out.println("success!");
+					}
+				}
+			}
+		});
+
+		helpBuilder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) {
+			// Do nothing
+			}
+		});
+
+		// Remember, create doesn't show the dialog
+		AlertDialog helpDialog = helpBuilder.create();
+		helpDialog.show();
+	}
+	
 }

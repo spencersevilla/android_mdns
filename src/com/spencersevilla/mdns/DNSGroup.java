@@ -5,7 +5,7 @@ import java.util.*;
 public abstract class DNSGroup {
 	public String name;
 	public String fullName;
-	private String[] groups;
+	protected String[] groups;
 	protected MultiDNS mdns;
 	public boolean recursive;
 	public static int id;
@@ -55,6 +55,17 @@ public abstract class DNSGroup {
 		return group;
 	}
 	
+	// this returns a boolean that shows if this group is as good 
+	// of a match as could possibly be made! "true" here means we will never
+	// forward - either we find the service at this group or it doesn't exist
+	// note that we subtract one from score for the servicename itself
+	protected boolean isBestPossibleMatch(String name) {
+		String[] names = name.split("\\.");
+		int maxLength = names.length;
+		int retVal = calculateScore(name);
+		return (retVal == maxLength);
+	}
+	
 	// for interface display
 	public String toString() {
 		return fullName;
@@ -73,7 +84,7 @@ public abstract class DNSGroup {
 		// but this cannot be the other way around!
 		// example: "james.ccrg.soe" maps to "ccrg.soe.ucsc" but not to "ccrg.csl.parc"
 		// alternatively, "james.ccrg.soe" CAN map to "inrg.soe.ucla" even if unintended
-		// THIS means that we have to start searching with the root of the DNS name
+		// THIS means that we have to start searching with the root of the DNS name requested
 		int startIndex = 0;
 		
 		for(startIndex = 0; startIndex < groups.length; startIndex++) {
@@ -93,11 +104,22 @@ public abstract class DNSGroup {
 		
 		// this for-loop starts at the first successful comparison
 		// and then counts the number of successful comparisons thereafter
-		for(count = 0; count < numReps; count++, startIndex++) {
-			if (!names[count].equals(groups[startIndex])) {
+		for(count = 0; count < numReps; count++) {
+			if (!names[count].equals(groups[startIndex + count])) {
 				break;
 			}
 		}
+		
+		// last addition: if we maxed-out the group's full name, add 1 to signify that
+		// we want to choose it as a parent! ie: searching for "james.csl.parc.global" gives:
+		// "isl.parc.global" -> 2
+		// "parc.global" -> 3 because it really represents "*.parc.global"
+		// "csl.parc.global" -> 4 to distinguish from above, employs same logic
+		if (count == (groups.length - startIndex)) {
+			count++;
+		}
+		
+		// System.out.println("groups.length = " + groups.length + " startIndex = " + startIndex);
 		
 		return count;
 	}

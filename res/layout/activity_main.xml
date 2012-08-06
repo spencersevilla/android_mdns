@@ -16,7 +16,7 @@
 	<RelativeLayout
 		android:layout_width="fill_parent"
 		android:layout_height="wrap_content"
-		android:paddingTop="70px"
+		android:paddingTop="100px"
 		android:id="@+id/tab1">
 	
 		<ListView
@@ -50,7 +50,7 @@
 	<RelativeLayout
 		android:layout_width="fill_parent"
 		android:layout_height="wrap_content"
-		android:paddingTop="70px"
+		android:paddingTop="100px"
 		android:id="@+id/tab2">
 	
 		<ListView

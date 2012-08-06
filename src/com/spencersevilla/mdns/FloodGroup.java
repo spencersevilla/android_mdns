@@ -8,7 +8,6 @@ import java.lang.Thread;
 public class FloodGroup extends DNSGroup implements Runnable {
 	public static final int id = 0;
 
-	protected MultiDNS mdns;
 	public boolean respond;
 	public String response;  
 	private HashMap serviceHash;
@@ -107,17 +106,31 @@ public class FloodGroup extends DNSGroup implements Runnable {
 	
 	// Generate response to FLD_REQ packets
 	private void parseReq(String servicename, InetAddress saddr, int sport) {
-		Service service = (Service) serviceHash.get(servicename);
-		if (service == null) {
-			// we're not responsible for this service
-			// (multicast will automatically continue to flood the request)
-			// (in non-IP networks there should exist code here to re-broadcast the FLD_REQ)
+		String addr = null;
+		
+		if (isBestPossibleMatch(servicename)) {
+			// already in the best group. here, either we answer the req (if we can)
+			// or it continues to flood the service group, timing out if nonexistent
+			String[] stringArray = servicename.split("\\.");
+			String name = stringArray[0];
+			Service service = (Service) serviceHash.get(name);
+			addr = service.addr;
+		} else {
+			// here let's see if we can find a better-matching group? if so, then it's
+			// guaranteed that no-one in THIS group will respond so we should forward it
+			int score = calculateScore(servicename);
+			addr = mdns.forwardRequest(servicename, score);
+		}
+		
+		if (addr == null) {
+			// we can't find this string OR we're not responsible for it
 			return;
 		}
 		
 		try {
 			// we have the info for this group so go ahead and reply!
-			String bstring = new String("FLD_REP:" + service.name + ":" + service.addr);
+			// note: the response we give uses the string they requested!
+			String bstring = new String("FLD_REP:" + servicename + ":" + addr);
 			System.out.println("sending: " + bstring);
 			byte buf[] = bstring.getBytes();
 			DatagramPacket pack = new DatagramPacket(buf, buf.length, saddr, sport);
