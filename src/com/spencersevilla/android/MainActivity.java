@@ -54,8 +54,14 @@ public class MainActivity extends Activity {
 		tabHost.addTab(spec2);
 		
 		// Start the main logic!
-		mdns = new MultiDNS();
-		
+		try {
+			mdns = new MultiDNS();
+			mdns.start();
+		} catch (Exception e) {
+			System.out.println("error: could not create mdns");
+			System.exit(0);
+		}
+
 		// Hook up the UI
 		initializeGroupList();
 		initializeServiceList();
@@ -174,7 +180,11 @@ public class MainActivity extends Activity {
 			public void onClick(DialogInterface dialog, int which) {
 				String name = input.getText().toString();
 				if (!name.equals("")) {
-					mdns.createAdHocGroup(name);
+					ArrayList<String> args = new ArrayList<String>();
+					args.add(name);
+					args.add("224.4.5.6");
+					args.add("6363");
+					mdns.createGroup(0, args);
 					groupAdapter.notifyDataSetChanged();
 					groupListView.setItemChecked(mdns.allGroups.size() - 1, true);
 				}
@@ -208,9 +218,9 @@ public class MainActivity extends Activity {
 				if (!name.equals("")) {
 					InetAddress addr = mdns.resolveService(name + ".spencer");
 					if (addr == null) {
-						System.out.println("failure!");
+						couldNotResolve(name);
 					} else {
-						System.out.println("success!");
+						resolvedService(name, addr.getHostAddress());
 					}
 				}
 			}
@@ -227,4 +237,31 @@ public class MainActivity extends Activity {
 		helpDialog.show();
 	}
 	
+	private void resolvedService(String service, String addr) {
+		AlertDialog.Builder helpBuilder = new AlertDialog.Builder(this);
+		helpBuilder.setTitle("Resolve Service");
+		helpBuilder.setMessage("Request for " + service + " returned " + addr);
+				
+		helpBuilder.setPositiveButton("Okay", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) {
+			}
+		});
+		// Remember, create doesn't show the dialog
+		AlertDialog helpDialog = helpBuilder.create();
+		helpDialog.show();
+	}
+
+	private void couldNotResolve(String service) {
+		AlertDialog.Builder helpBuilder = new AlertDialog.Builder(this);
+		helpBuilder.setTitle("Resolve Service");
+		helpBuilder.setMessage("Request for " + service + " failed.");
+				
+		helpBuilder.setPositiveButton("Okay", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) {
+			}
+		});
+		// Remember, create doesn't show the dialog
+		AlertDialog helpDialog = helpBuilder.create();
+		helpDialog.show();
+	}
 }
