@@ -37,22 +37,26 @@ public abstract class DNSGroup {
 	}
 	
 	public static final DNSGroup createGroupFromString(MultiDNS m, String arg_string) {
-		// String[] args = arg_string.split(":");
-		// DNSGroup group = null;
+		String[] args = arg_string.split(":");
+		DNSGroup group = null;
 		
-		// if (args.length < 1) {
-		// 	System.out.println("error: args.length < 1");
-		// 	return null;
-		// }
+		if (args.length < 1) {
+			System.out.println("error: args.length < 1");
+			return null;
+		}
+
+		ArrayList<String> arglist = new ArrayList<String>(Arrays.asList(args));
+		int type = Integer.parseInt(arglist.remove(0));
+
+		if (type == FloodGroup.id) {
+			group = new FloodGroup(m, arglist);
+		} else if (type == ChordGroup.id) {
+			group = new ChordGroup(m, arglist);
+		} else {
+			group = null;
+		}
 		
-		// int type = Integer.parseInt(args[0]);
-		// if (type == FloodGroup.id) {
-		// 	group = new FloodGroup(m, args);
-		// } else {
-		// 	group = null;
-		// }
-		
-		return null;
+		return group;
 	}
 	
 	// this returns a boolean that shows if this group is as good 

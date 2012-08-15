@@ -171,8 +171,8 @@ public class FloodGroup extends DNSGroup implements Runnable {
 
 			MulticastSocket s = new MulticastSocket();
 			
-			// wait 5 seconds
-			s.setSoTimeout(5000);
+			// wait 10 seconds
+			s.setSoTimeout(10000);
 
 	        s.send(pack);
 			s.receive(pack2);
