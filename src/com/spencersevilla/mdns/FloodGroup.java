@@ -132,7 +132,8 @@ public class FloodGroup extends DNSGroup implements Runnable {
 			// here let's see if we can find a better-matching group? if so, then it's
 			// guaranteed that no-one in THIS group will respond so we should forward it
 			int score = calculateScore(servicename);
-			addr = mdns.forwardRequest(servicename, score);
+			InetAddress a = mdns.forwardRequest(servicename, score);
+			addr = a.getHostAddress();
 		}
 		
 		if (addr == null) {
@@ -155,11 +156,11 @@ public class FloodGroup extends DNSGroup implements Runnable {
 	}
 	
 	// Client-Side when service-resolution requested!
-	public String resolveService(String name) {
+	public InetAddress resolveService(String name) {
 		return resolveService(name, 0);
 	}
 	
-	public String resolveService(String name, int minScore) {
+	public InetAddress resolveService(String name, int minScore) {
 		String bstring = new String("FLD_REQ:" + fullName + ":" + name);
 		byte buf[] = bstring.getBytes();
 		byte buf2[] = new byte[1024];
@@ -192,8 +193,9 @@ public class FloodGroup extends DNSGroup implements Runnable {
 				// wrong service?
 				return null;
 			}
-			return addr;
 
+			InetAddress result = InetAddress.getByName(addr);
+			return result;
 		} catch (InterruptedIOException iioe) {
 			System.out.println("FG " + fullName + ": timeout, service " + name + " not resolved");
 		} catch (Exception e) {

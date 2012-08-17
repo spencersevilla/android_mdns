@@ -306,16 +306,8 @@ public class MultiDNS {
 		if (servicename.endsWith(".")) {
 			servicename = servicename.substring(0, servicename.length() - 1);
 		}
-
-		// make sure we trapped appropriately from jnamed
-		if (!servicename.endsWith(".spencer")) {
-			System.err.println("MDNS error: received incorrect servicename " + servicename);
-			return null;
-		}
-		// ok now remove the dns format-key from it
-		String trimName = servicename.substring(0, servicename.length() - 8);		
 		
-		DNSGroup group = findResponsibleGroup(trimName);
+		DNSGroup group = findResponsibleGroup(servicename);
 		if (group == null) {
 			// nowhere to foward, we don't know anyone in this hierarchy!
 			// note: MAYBE flooding a request could find cached information
@@ -323,18 +315,11 @@ public class MultiDNS {
 			return null;
 		}
 		
-		String addr = group.resolveService(trimName);
-			if (addr != null) {
-				try {
-					return InetAddress.getByName(addr);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		return null;
+		InetAddress addr = group.resolveService(servicename);
+		return addr;
 	}
 	
-	public String forwardRequest(String servicename, int minScore) {
+	public InetAddress forwardRequest(String servicename, int minScore) {
 		// forward or rebroadcast the request to a different group if possible
 		// minScore ensures that we don't loop: we can only forward to another group
 		// if it's a better match than the group this request came from.
@@ -349,7 +334,7 @@ public class MultiDNS {
 		return g.resolveService(servicename, minScore);
 	}
 	
-	public String forwardRequest(String servicename, int minScore, String addr, int port) {
+	public InetAddress forwardRequest(String servicename, int minScore, InetAddress addr, int port) {
 		return igs.resolveService(servicename, minScore, addr, port);
 	}
 	

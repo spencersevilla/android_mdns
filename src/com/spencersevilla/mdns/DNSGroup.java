@@ -1,6 +1,7 @@
 package com.spencersevilla.mdns;
 
 import java.util.*;
+import java.net.InetAddress;
 
 public abstract class DNSGroup {
 	public String name;
@@ -133,8 +134,8 @@ public abstract class DNSGroup {
 	public abstract void stop();
 	public abstract void serviceRegistered(Service s);
 	public abstract void serviceRemoved(Service s);
-	public abstract String resolveService(String name);
-	public abstract String resolveService(String name, int minScore);
+	public abstract InetAddress resolveService(String name);
+	public abstract InetAddress resolveService(String name, int minScore);
 	
 	public boolean joinGroup() {
 		// no work really necessary here?

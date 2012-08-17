@@ -614,8 +614,6 @@ formerrMessage(byte [] in) {
 
 public byte []
 errorMessage(Message query, int rcode) {
-	System.out.println("jnamed ERROR: errorMessage CALLED!");
-	
 	return buildErrorMessage(query.getHeader(), rcode,
 				 query.getQuestion());
 }

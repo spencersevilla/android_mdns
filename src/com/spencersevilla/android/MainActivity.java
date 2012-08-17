@@ -216,7 +216,7 @@ public class MainActivity extends Activity {
 			public void onClick(DialogInterface dialog, int which) {
 				String name = input.getText().toString();
 				if (!name.equals("")) {
-					InetAddress addr = mdns.resolveService(name + ".spencer");
+					InetAddress addr = mdns.resolveService(name);
 					if (addr == null) {
 						couldNotResolve(name);
 					} else {

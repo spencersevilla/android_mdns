@@ -149,11 +149,11 @@ public class ChordGroup extends DNSGroup {
 		}
 	}
 	
-	public String resolveService(String name) {
+	public InetAddress resolveService(String name) {
 		return resolveService(name, 0);
 	}
 	
-	public String resolveService(String name, int minScore) {
+	public InetAddress resolveService(String name, int minScore) {
 		if (chord == null) {
 			System.err.println("CG " + fullName + " resolveService error: chord == null");
 			return null;
@@ -189,7 +189,13 @@ public class ChordGroup extends DNSGroup {
 		String[] servicegroups = name.split("\\.");
 		
 		if (servicename.equals(servicegroups[0])) {
-			return res;
+			try {
+				InetAddress result = InetAddress.getByName(res);
+				return result;
+			} catch (UnknownHostException e) {
+				e.printStackTrace();
+				return null;
+			}
 		} else {
 			// indicates we're not prepared to forward?
 			if (minScore == 0) {
@@ -202,10 +208,14 @@ public class ChordGroup extends DNSGroup {
 			// }
 			
 			// maybe don't hard-code these in?
-			String addr = res;
+			try {
+			InetAddress addr = InetAddress.getByName(res);
 			int port = 5300;
-			
 			return mdns.forwardRequest(name, minScore, addr, port);
+			} catch (UnknownHostException e) {
+				e.printStackTrace();
+				return null;
+			}
 		}
 	}
 	
@@ -333,30 +343,30 @@ public class ChordGroup extends DNSGroup {
 	  	return port;
 	}
 
-	public static void main(String[] args) {
-		String s;
+	// public static void main(String[] args) {
+	// 	String s;
 		
-		if (args.length > 0) {
-			s = args[0];
-		} else {
-			s = "join";
-		}
+	// 	if (args.length > 0) {
+	// 		s = args[0];
+	// 	} else {
+	// 		s = "join";
+	// 	}
 		
-		Service serv = new Service("creator", 500, null);
+	// 	Service serv = new Service("creator", 500, null);
 		
-		if (s.equals("register")) {
-			ChordGroup c = new ChordGroup(null, "testchord");
-			c.joinChord();
-			c.serviceRegistered(serv);
-		} else if (s.equals("resolve")) {
-			ChordGroup c = new ChordGroup(null, "testchord");
-			c.joinChord();
-			String res = c.resolveService("creator");
-			System.out.println("CHORD RETURNED: " + res);
-		} else {
-			//create chord
-			ChordGroup c = new ChordGroup(null, "testchord");
-			c.createChord();
-		}
-	}
+	// 	if (s.equals("register")) {
+	// 		ChordGroup c = new ChordGroup(null, "testchord");
+	// 		c.joinChord();
+	// 		c.serviceRegistered(serv);
+	// 	} else if (s.equals("resolve")) {
+	// 		ChordGroup c = new ChordGroup(null, "testchord");
+	// 		c.joinChord();
+	// 		String res = c.resolveService("creator");
+	// 		System.out.println("CHORD RETURNED: " + res);
+	// 	} else {
+	// 		//create chord
+	// 		ChordGroup c = new ChordGroup(null, "testchord");
+	// 		c.createChord();
+	// 	}
+	// }
 }
