@@ -9,7 +9,6 @@ import com.thoughtworks.xstream.XStream;
 public class MultiDNS {
     
     protected BootstrapServer bs;
-	protected jnamed dns_server;
 	protected InterGroupServer igs;
 	protected boolean running;
 	private String hostname;
@@ -43,13 +42,9 @@ public class MultiDNS {
 		// loadServices();
 		// loadGroups();
 
-		// here we initialize (but don't start) all the servers.
-		// We absolutely MUST initialize the jnamed here! this is
-		// because it requires a privileged port (UDP53) and we
-		// don't want to run MultiDNS start() with root privileges!
+		// here we initialize (but don't start) all of the servers.
         bs = new BootstrapServer(this);
 		igs = new InterGroupServer(this);
-		dns_server = new jnamed(this);
 
 		System.out.println("MDNS: initialized!");
 	}
@@ -58,14 +53,12 @@ public class MultiDNS {
 	public void start() throws Exception {
 		bs.start();
 		igs.start();
-		dns_server.start();
 		System.out.println("MDNS: started!");
 	}
 	
 	public void stop() throws Exception {
 		bs.stop();
 		igs.stop();
-		dns_server.stop();
 		System.out.println("MDNS: stopped!");
 
 		// also pause every service we're a part of
@@ -107,6 +100,15 @@ public class MultiDNS {
 
 	protected String getAddr() {
 		return address;
+	}
+
+	public void addDNSServer(String name, String address) {
+		try {
+			InetAddress addr = InetAddress.getByName(address);
+			igs.addDNSServer(name, addr);
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		}
 	}
 
 	private void loadServices() {		

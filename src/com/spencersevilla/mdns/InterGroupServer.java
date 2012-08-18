@@ -15,16 +15,19 @@ public class InterGroupServer implements Runnable {
 	protected MultiDNS mdns;
 	private Thread thread;
 	public static int port = 5300;
-    private DatagramSocket socket;
+    protected DatagramSocket socket;
 	private boolean listening;
 	private volatile boolean running;
-	private ArrayList<InterGroupThread> threads;
+	protected ArrayList<InterGroupThread> threads;
+	protected ArrayList<Name> dns_names;
+	protected ArrayList<InetAddress> dns_addrs;
 
 	InterGroupServer(MultiDNS m) throws Exception {
 		mdns = m;
 		threads = new ArrayList<InterGroupThread>();
 		socket = new DatagramSocket(port);
-
+		dns_names = new ArrayList<Name>();
+		dns_addrs = new ArrayList<InetAddress>();
 	}
 
 	public void start() {
@@ -49,6 +52,22 @@ public class InterGroupServer implements Runnable {
 		}
 	}
 
+	public void addDNSServer(String sname, InetAddress addr) {
+		if (sname == null || addr == null) {
+			return;
+		}
+
+		try {
+			Name name = new Name(sname);
+			dns_names.add(name);
+			dns_addrs.add(addr);
+		} catch (TextParseException e) {
+			System.err.println("could not create DNS Name from string " + sname);
+			return;
+		}
+
+	}
+
 	public void run() {
 
         byte buf[];
@@ -68,7 +87,7 @@ public class InterGroupServer implements Runnable {
 		        	continue;
 		        }
 
-				InterGroupThread t = new InterGroupThread(socket, pack, mdns, threads);
+				InterGroupThread t = new InterGroupThread(this, pack);
 				threads.add(t);
 				t.start();
 			}
@@ -83,15 +102,18 @@ public class InterGroupServer implements Runnable {
 		try {
 			byte[] sendbuf = generateRequest(servicename);
 			if (sendbuf == null) {
+				System.err.println("IGS error: sendbuf is null");
 				return null;
 			}
 			DatagramPacket sendpack = new DatagramPacket(sendbuf, sendbuf.length, addr, port);
 
 			byte[] recbuf = new byte[1024];
 			DatagramPacket recpack = new DatagramPacket(recbuf, recbuf.length);
-
 			DatagramSocket sock = new DatagramSocket();
 			sock.setSoTimeout(10000);
+
+			System.out.println("IGS: requesting " + servicename + " from " + addr + ":" + port);
+
 			sock.send(sendpack);
 
 			// Timeout Breaks Here!
@@ -99,9 +121,12 @@ public class InterGroupServer implements Runnable {
 			Message m = new Message(recpack.getData());
 			InetAddress result = parseResponse(m);
 
+			System.out.println("IGS: " + addr + ":" + port + " returned " + result + " for " + servicename);
+
 			return result;
 		} catch (SocketTimeoutException e) {
 			// timed out! :-(
+			System.err.println("IGS error: socket timed out");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -115,6 +140,7 @@ public class InterGroupServer implements Runnable {
 			Message request = Message.newQuery(query);
 			return request.toWire();
 		} catch (TextParseException e) {
+			System.err.println("IGS error: could not generate request");
 			return null;
 		}
 	}
@@ -122,11 +148,14 @@ public class InterGroupServer implements Runnable {
 	InetAddress parseResponse(Message response) {
 		Header header = response.getHeader();
 
-		if (!header.getFlag(Flags.QR))
+		if (!header.getFlag(Flags.QR)) {
+			System.err.println("IGS error: response not a QR");
 			return null;
-		if (header.getRcode() != Rcode.NOERROR)
+		}
+		if (header.getRcode() != Rcode.NOERROR) {
+			System.err.println("IGS error: header Rcode is " + header.getRcode());
 			return null;
-
+		}
 		Record question = response.getQuestion();
 
 		// sanity check on question here...
@@ -163,12 +192,14 @@ class InterGroupThread extends Thread {
     MultiDNS mdns = null;
 	ArrayList<InterGroupThread> array = null;
 	DatagramSocket socket = null;
+	InterGroupServer server = null;
 	
-    public InterGroupThread(DatagramSocket s, DatagramPacket p, MultiDNS m, ArrayList<InterGroupThread> ar) {
+    public InterGroupThread(InterGroupServer s, DatagramPacket p) {
+    	server = s;
 		inpacket = p;
-        mdns = m;
-		array = ar;
-		socket = s;
+        mdns = server.mdns;
+		array = server.threads;
+		socket = server.socket;
 	}
 
 	public void run() {
@@ -269,7 +300,9 @@ class InterGroupThread extends Thread {
 		if (nameString.endsWith(".dssd")) {
 			nameString = nameString.substring(0, nameString.length() - 5);
 		} else {
-			return Rcode.NOTIMP;
+			System.out.println("IGS: received request for alternative TLD, returning DNS referrals");
+			// this is a TLD that we don't support. Perhaps another DNS server will?
+			return generateReferral(query, response, flags);
 		}
 
 		if (type == Type.A) {
@@ -301,7 +334,30 @@ class InterGroupThread extends Thread {
 		return Rcode.REFUSED;
 	}
 
-	public byte [] errorMessage(Message query, int rcode) {	
+	byte generateReferral(Record query, Message response, int flags) {
+		// This function returns a list of all other DNS servers we're aware of.
+		// The presumption is that this TLD is not our domain, so we will
+		// hook into the "traditional" DNS hierarchy to see if they might
+		// have an answer. If it's not supported by them, then let THEM say so.
+		// Note that we're returning the list of DNS servers and then we're done with
+		// it... this is an example of non-recursive response.
+		Name name = query.getName();
+		int ttl = 0;
+
+		for (int i = 0; i < server.dns_names.size(); i++) {
+			byte[] rdata_auth = server.dns_names.get(i).toWireCanonical();
+			byte[] rdata_addl = server.dns_addrs.get(i).getAddress();
+			Record auth = Record.newRecord(name, Type.NS, DClass.IN, ttl, rdata_auth);
+			Record addl = Record.newRecord(server.dns_names.get(i), Type.A, DClass.IN, ttl, rdata_addl);
+
+			response.addRecord(auth, Section.AUTHORITY);
+			response.addRecord(addl, Section.ADDITIONAL);
+		}
+
+		return Rcode.NOERROR;
+	}
+
+	byte [] errorMessage(Message query, int rcode) {	
 		return buildErrorMessage(query.getHeader(), rcode,
 					 query.getQuestion());
 	}
@@ -342,11 +398,6 @@ class InterGroupThread extends Thread {
 	}
 
 	public void exit() {
-		try {
-			socket.close();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
 		array.remove(this);
 	}
 }
