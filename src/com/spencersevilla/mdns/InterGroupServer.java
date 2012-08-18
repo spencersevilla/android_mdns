@@ -135,6 +135,14 @@ public class InterGroupServer implements Runnable {
 
 	byte[] generateRequest(String name) {
 		try {
+			if (!name.endsWith(".")) {
+				name = name.concat(".");
+			}
+
+			if (!name.endsWith("dssd.")) {
+				name = name.concat("dssd.");
+			}
+
 			Name n = new Name(name);
 			Record query = Record.newRecord(n, Type.A, DClass.IN);
 			Message request = Message.newQuery(query);
