@@ -21,13 +21,16 @@ public class ChordGroup extends DNSGroup {
 	public int lport = 0;
 	public String daddr = null;
 	public int dport = 0;
+	private ArrayList<Service> services;
 
 	ChordGroup(MultiDNS m, String n) {
 		super(m, n);
+		services = new ArrayList<Service>();
 	}
 	
 	ChordGroup(MultiDNS m, ArrayList<String> nameArgs) {
 		super(m, nameArgs.get(0));
+		services = new ArrayList<Service>();
 
 		if (nameArgs.get(1).equals("create")) {
 			if (nameArgs.size() > 2) {
@@ -50,7 +53,10 @@ public class ChordGroup extends DNSGroup {
 	
 	// DNSGroup methods =========================================================
 	public void start() {
-		laddr = mdns.getAddr();
+		InetAddress a = mdns.getAddr();
+		if (a != null) {
+			laddr = a.getHostName();
+		}
 		if (laddr == null) {
 			try {
 				laddr = InetAddress.getLocalHost().getHostName();
@@ -73,7 +79,11 @@ public class ChordGroup extends DNSGroup {
 	}
 
 	public void stop() {
-		System.out.println("CG " + fullName + " stopping.");
+		for (Service s : services) {
+			serviceRemoved(s);
+		}
+
+		System.out.println("CG " + fullName + ": stopped.");
 	}
 
 	public boolean createSubGroup(String name) {
@@ -104,8 +114,9 @@ public class ChordGroup extends DNSGroup {
 		
 		// now try inserting
 		try {
-			chord.insert(key, s.addr);
+			chord.insert(key, s.addr.getHostAddress());
 			System.out.println("CG " + fullName + ": inserted " + s.addr + " for key: " + s.name);
+			services.add(s);
 			return true;
 		} catch (Exception e) {
 			System.err.println("CG " + fullName + " error: could not insert " + s.addr + " for key: " + s.name);
@@ -124,8 +135,9 @@ public class ChordGroup extends DNSGroup {
 		StringKey key = new StringKey(s.name);
 		
 		try {
-			chord.insert(key, s.addr);
+			chord.insert(key, s.addr.getHostAddress());
 			System.out.println("CG " + fullName + ": inserted " + s.addr + " for key: " + s.name);
+			services.add(s);
 		} catch (Exception e) {
 			System.err.println("CG " + fullName + " error: could not insert " + s.addr + " for key: " + s.name);
 			e.printStackTrace();
@@ -139,6 +151,7 @@ public class ChordGroup extends DNSGroup {
 		}
 		
 		StringKey key = new StringKey(s.name);
+		services.remove(s);
 		
 		try {
 			chord.remove(key, s.addr);
@@ -159,6 +172,8 @@ public class ChordGroup extends DNSGroup {
 			return null;
 		}
 		
+		System.out.println("CG " + fullName + ": resolving " + name);
+
 		// STEP 1: PRODUCE A SERVICENAME!
 		String servicename = getServiceName(name);
 		
@@ -174,10 +189,12 @@ public class ChordGroup extends DNSGroup {
 		}
 		
 		if (set == null) {
+			System.err.println("CG " + fullName + " error: set was null!");
 			return null;
 		}
 		
 		if (set.isEmpty()) {
+			System.err.println("CG " + fullName + " error: set was empty!");
 			return null;
 		}
 		
@@ -191,6 +208,7 @@ public class ChordGroup extends DNSGroup {
 		if (servicename.equals(servicegroups[0])) {
 			try {
 				InetAddress result = InetAddress.getByName(res);
+				System.out.println("CG " + fullName + ": returning " + result + "for " + name);
 				return result;
 			} catch (UnknownHostException e) {
 				e.printStackTrace();
@@ -198,9 +216,10 @@ public class ChordGroup extends DNSGroup {
 			}
 		} else {
 			// indicates we're not prepared to forward?
-			if (minScore == 0) {
-				return null;
-			}
+			// if (minScore == 0) {
+			// 	System.err.println("CG " + fullName + " error: minscore return???");
+			// 	return null;
+			// }
 						
 			// String vals = res.split(":");
 			// if (vals.length < 2) {
@@ -210,60 +229,13 @@ public class ChordGroup extends DNSGroup {
 			// maybe don't hard-code these in?
 			try {
 			InetAddress addr = InetAddress.getByName(res);
-			int port = 5300;
-			return mdns.forwardRequest(name, minScore, addr, port);
+			int port = 53;
+			return mdns.forwardRequest(name, this, addr, port);
 			} catch (UnknownHostException e) {
 				e.printStackTrace();
 				return null;
 			}
 		}
-	}
-	
-	private String getServiceName(String fullname) {
-		// GOAL: compare the fullname "spencer.csl.parc"
-		// with the chord name "parc.global" to produce the string
-		// "csl" which will be the key that the chord will search for!
-		String[] servicegroups = fullname.split("\\.");
-		Collections.reverse(Arrays.asList(servicegroups));
-		
-		// NOW: we're comparing the array servicegroups [parc, csl, spencer] with
-		// the chordgroup fullname array groups [global, parc] to figure out which
-		// entry in servicegroups we're looking for!
-		int startIndex = 0;
-		
-		for(startIndex = 0; startIndex < groups.length; startIndex++) {
-			if (servicegroups[0].equals(groups[startIndex])) {
-				break;
-			}
-		}
-		
-		if (startIndex == groups.length) {
-			System.err.println("CG " + fullName + ": getServiceName didn't find the name?");
-			return null;
-		}
-		
-		// HERE: startIndex has the first "hit" in the chordgroup fullname array
-		// The only way this function can operate is by going THROUGH the entire
-		// chordgroup's full name and finding it's first child. If this doesn't work,
-		// then there's an error! ie a ChordGroup of "parc.usa.global" can only answer
-		// queries for one level down, ie "XXX.parc.usa.global".
-		int retIndex = groups.length - startIndex;
-		if (retIndex < 0 || servicegroups.length <= retIndex) {
-			System.err.println("CG " + fullName + ": getServiceName bounds error");
-			return null;
-		}
-		
-		// double-check but every entry here should be equal!
-		for (int i = 0; i < retIndex; i++) {
-			if (!servicegroups[i].equals(groups[startIndex + i])) {
-				System.err.println("CG " + fullName + ": getServiceName could not make sense of groups");
-				return null;
-			}
-		}
-		
-		return servicegroups[retIndex];
-		// Chord CANNOT answer anything at all for "*.att.usa.global", "*.usa.global", etc.
-		// Find a way to forward up? Maybe a key for "parent"?
 	}
 	
 	// cleanup method

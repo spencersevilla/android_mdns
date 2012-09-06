@@ -59,6 +59,7 @@ public class MainActivity extends Activity {
 			mdns.start();
 		} catch (Exception e) {
 			System.out.println("error: could not create mdns");
+			e.printStackTrace();
 			System.exit(0);
 		}
 

@@ -47,8 +47,8 @@ public class InterGroupServer implements Runnable {
 		System.out.println("IGS: stopped");
 
 		// abort all running requests
-		for (InterGroupThread t : threads) {
-			t.exit();
+		for (Iterator<InterGroupThread> it = threads.iterator(); it.hasNext(); ) {
+			it.remove();
 		}
 	}
 
@@ -216,6 +216,7 @@ class InterGroupThread extends Thread {
 
 			if (response == null) {
 				exit();
+				return;
 			}
 
 			DatagramPacket outpacket = new DatagramPacket(response, response.length, 
@@ -224,8 +225,8 @@ class InterGroupThread extends Thread {
 			socket.send(outpacket);
 		} catch (Exception e) {
 			e.printStackTrace();
+			exit();
 		}
-		exit();
 	}
 
 	// this function borrows HEAVILY from jnamed.java's generateReply function!
@@ -242,6 +243,10 @@ class InterGroupThread extends Thread {
 			return errorMessage(query, Rcode.FORMERR);
 		if (header.getOpcode() != Opcode.QUERY)
 			return errorMessage(query, Rcode.NOTIMP);
+
+		if (shouldForward(query)) {
+			return queryRegularDNS(query);
+		}
 
 		// parse out the question from the record
 		Record queryRecord = query.getQuestion();
@@ -275,7 +280,7 @@ class InterGroupThread extends Thread {
     	//		3) respond in the positive (found the node)
     	//		4) respond in the negative (end-of-the-line)
 
-		byte rcode = generateAnswer(queryRecord, response, flags);
+		byte rcode = generateAnswer(query, response, flags);
 
 		if (rcode != Rcode.NOERROR && rcode != Rcode.NXDOMAIN) {
 			return errorMessage(query, rcode);
@@ -287,10 +292,11 @@ class InterGroupThread extends Thread {
 		return response.toWire(maxLength);
 	}
 
-	byte generateAnswer(Record query, Message response, int flags) {
-		Name name = query.getName();
-		int type = query.getType();
-		int dclass = query.getDClass();
+	byte generateAnswer(Message query, Message response, int flags) {
+		Record queryRecord = query.getQuestion();
+		Name name = queryRecord.getName();
+		int type = queryRecord.getType();
+		int dclass = queryRecord.getDClass();
 		byte rcode = Rcode.NOERROR;
 		int ttl = 0;
 
@@ -308,9 +314,8 @@ class InterGroupThread extends Thread {
 		if (nameString.endsWith(".dssd")) {
 			nameString = nameString.substring(0, nameString.length() - 5);
 		} else {
-			System.out.println("IGS: received request for alternative TLD, returning DNS referrals");
-			// this is a TLD that we don't support. Perhaps another DNS server will?
-			return generateReferral(query, response, flags);
+			// what the hell happened? we already checked for this!
+			return Rcode.REFUSED;
 		}
 
 		if (type == Type.A) {
@@ -363,6 +368,63 @@ class InterGroupThread extends Thread {
 		}
 
 		return Rcode.NOERROR;
+	}
+
+	boolean shouldForward(Message query) {
+		Record queryRecord = query.getQuestion();
+
+		if (queryRecord == null) {
+			return true;
+		}
+
+		String nameString = queryRecord.getName().toString();
+		int type = queryRecord.getType();
+
+		// check for our TLD suffix
+		if (!nameString.endsWith("dssd.") && !nameString.endsWith("dssd")) {
+			return true;
+		}
+
+		if (type != Type.A) {
+			return true;
+		}
+
+		// we've sanity-checked this record and it's okay for us to handle it!
+		// (it is an A record-query belonging to the .dssd. TLD)
+		return false;
+	}
+
+	// this function forwards the query onto an ACTUAL DNS server and then just
+	// returns whatever message it's given
+	byte [] queryRegularDNS(Message query) {
+		InetAddress dns_server = server.dns_addrs.get(0);
+		if (dns_server == null) {
+			return null;
+		}
+
+		try {
+			DatagramSocket sock = new DatagramSocket();
+			sock.setSoTimeout(10000);
+
+			byte[] sendbuf = query.toWire();
+			byte[] recbuf = new byte[1024];
+
+			DatagramPacket sendpack = new DatagramPacket(sendbuf, sendbuf.length, dns_server, 53);
+			DatagramPacket recpack = new DatagramPacket(recbuf, recbuf.length);
+
+			sock.send(sendpack);
+			sock.receive(recpack);
+
+			byte[] retval = new byte[recpack.getLength()];
+			retval = Arrays.copyOf(recbuf, recpack.getLength());
+
+			return retval;
+		} catch (SocketTimeoutException e) {
+			return null;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
 	}
 
 	byte [] errorMessage(Message query, int rcode) {	
