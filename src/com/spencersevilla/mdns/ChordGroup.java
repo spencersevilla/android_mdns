@@ -14,9 +14,9 @@ import de.uniba.wiai.lspi.chord.service.Chord;
 
 // implement DNSGroup, Runnable later on
 public class ChordGroup extends DNSGroup {
+	public static int id = 1;
 	private Chord chord;
 	private boolean running;
-	public static final int id = 1;
 	public String laddr = null;
 	public int lport = 0;
 	public String daddr = null;
@@ -52,6 +52,10 @@ public class ChordGroup extends DNSGroup {
 	}
 	
 	// DNSGroup methods =========================================================
+	public int getId() {
+		return ChordGroup.id;
+	}
+
 	public void start() {
 		InetAddress a = mdns.getAddr();
 		if (a != null) {

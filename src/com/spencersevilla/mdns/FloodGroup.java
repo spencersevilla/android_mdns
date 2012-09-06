@@ -6,7 +6,7 @@ import java.util.*;
 import java.lang.Thread;
 
 public class FloodGroup extends DNSGroup implements Runnable {
-	public static final int id = 0;
+	public static int id = 0;
 
 	public boolean respond;
 	public String response;  
@@ -45,6 +45,10 @@ public class FloodGroup extends DNSGroup implements Runnable {
 		if (nameArgs.size() > 2) {
 			port = Integer.parseInt(nameArgs.get(2));
 		}
+	}
+
+	public int getId() {
+		return FloodGroup.id;
 	}
 	
 	public void start() {

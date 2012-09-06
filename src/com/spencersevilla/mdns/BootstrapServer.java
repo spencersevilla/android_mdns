@@ -100,7 +100,7 @@ public class BootstrapServer implements Runnable {
 				String opts = group.getResponse();
 				if (opts != null) {
 					// we have the info for this group so go ahead and reply!
-					String bstring = new String("GRP_REP" + token2 + group.id + token1 + group.fullName + token1 + opts);
+					String bstring = new String("GRP_REP" + token2 + group.getId() + token1 + group.fullName + token1 + opts);
 					return bstring;
 				}
 				return null;
@@ -117,7 +117,7 @@ public class BootstrapServer implements Runnable {
 		for (DNSGroup group : mdns.groupList) {
 			opts = group.getResponse();
 			if (opts != null) {
-				s = new String(group.id + ":" + group.fullName + ":" + opts);
+				s = new String(group.getId() + ":" + group.fullName + ":" + opts);
 				entries.add(s);
 			}
 		}

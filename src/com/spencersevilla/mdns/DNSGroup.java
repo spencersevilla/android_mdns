@@ -9,7 +9,6 @@ public abstract class DNSGroup {
 	protected String[] groups;
 	protected MultiDNS mdns;
 	public boolean recursive;
-	public static int id;
 	public DNSGroup parent;
 	
 // These functions are SPECIFIC to DNSGroup and may NOT be overridden by another class
@@ -221,6 +220,7 @@ public abstract class DNSGroup {
 // These functions MUST be overridden: they provide the core DNSGroup functionality!
 // ======================================================================================
 
+	public abstract int getId();
 	public abstract void start();
 	public abstract void stop();
 	public abstract void serviceRegistered(Service s);

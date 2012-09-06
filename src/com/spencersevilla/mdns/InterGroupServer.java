@@ -48,6 +48,8 @@ public class InterGroupServer implements Runnable {
 
 		// abort all running requests
 		for (Iterator<InterGroupThread> it = threads.iterator(); it.hasNext(); ) {
+			InterGroupThread t = it.next();
+			t.cleanup();
 			it.remove();
 		}
 	}
@@ -468,6 +470,12 @@ class InterGroupThread extends Thread {
 	}
 
 	public void exit() {
+		cleanup();
 		array.remove(this);
+	}
+
+	public void cleanup() {
+		socket.close();
+		return;
 	}
 }

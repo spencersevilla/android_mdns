@@ -11,7 +11,7 @@ public class ServerGroup extends DNSGroup implements Runnable {
 	private boolean serving;
 	private Thread thread;
 	private ArrayList<Service> services;
-	public static final int id = 2;
+	public static int id = 2;
 
 	ServerGroup(MultiDNS m, String n, InetAddress a, int p, boolean s) {
 		super(m, n);
@@ -29,7 +29,7 @@ public class ServerGroup extends DNSGroup implements Runnable {
 			if (nameArgs.size() < 3) {
 				System.err.println("SG " + fullName + " init error: no local port!");
 			} else {
-				addr = null;
+				addr = Service.generateAddress();
 				port = Integer.parseInt(nameArgs.get(2));
 				serving = true;
 			}
@@ -52,6 +52,10 @@ public class ServerGroup extends DNSGroup implements Runnable {
 	}
 
 	// DNSGroup required methods =========================================================
+	public int getId() {
+		return ServerGroup.id;
+	}
+
 	public void start() {
 		if (!serving) {
 			System.out.println("SG " + fullName + ": starting-up, but not serving!");
@@ -82,17 +86,17 @@ public class ServerGroup extends DNSGroup implements Runnable {
 
 				if(args[0].equals("SRV_REG")) {
 					String sname = args[1];
-					InetAddress addr = null;
+					InetAddress a = null;
 	
 					try {
-						addr = InetAddress.getByName(args[2]);
+						a = InetAddress.getByName(args[2]);
 					} catch (UnknownHostException e) {
 						System.err.println("SG " + fullName + " error: invalid address given!");
 						continue;
 					}
 
 					Service s = new Service(sname, 0, mdns);
-					s.addr = addr;
+					s.addr = a;
 					serviceRegistered(s);
 				} else if (args[0].equals("SRV_DEL")) {
 					String sname = args[1];
@@ -210,10 +214,11 @@ public class ServerGroup extends DNSGroup implements Runnable {
 	// DNSGroup optional methods ========================================================
 
 	// for BootstrapServer
-	protected String getResponse() {
-		String ret = new String("join:" + addr + ":" + port);
-		return ret;
-	}
+	// currently commented-out so no-one can join it!
+	// protected String getResponse() {
+	// 	String ret = new String("join:" + addr.getHostAddress() + ":" + port);
+	// 	return ret;
+	// }
 
 	public boolean createSubGroup(String name) {
 		String req_name = new String(name + "." + fullName);
