@@ -146,49 +146,66 @@ public abstract class DNSGroup {
 		// GOAL: compare the fullname "spencer.csl.parc"
 		// with the chord name "parc.global" to produce the string
 		// "csl" which will be the key that the chord will search for!
-		String[] servicegroups = fullname.split("\\.");
-		Collections.reverse(Arrays.asList(servicegroups));
+
+		String[] querygroups = fullname.split("\\.");
+		Collections.reverse(Arrays.asList(querygroups));
 		
-		// NOW: we're comparing the array servicegroups [parc, csl, spencer] with
-		// the chordgroup fullname array groups [global, parc] to figure out which
-		// entry in servicegroups we're looking for!
-		int startIndex = 0;
-		
-		for(startIndex = 0; startIndex < groups.length; startIndex++) {
-			if (servicegroups[0].equals(groups[startIndex])) {
+		// NOW:
+		// querygroups = [parc, csl, spencer] and groups = [global, parc].
+		// First, let's extend the querygroups to be absolute! This is also
+		// a sanity check, we'll bail-out if we can't find a match here...
+		querygroups = absoluteQuery(querygroups, groups);
+		if (querygroups == null) {
+			return null;
+		}
+
+		// Now, we go down the list until we find the first non-match in
+		// the query. If it's a member of this group, we return its name, 
+		// if it's above this group we return "parent".
+		for (int i = 0; i < groups.length; i++) {
+			if (!querygroups[i].equals(groups[i])) {
+				return new String("parent");
+			}
+		}
+
+		return querygroups[groups.length];
+	}
+
+	private String[] absoluteQuery(String[] query, String[] groupname) {
+		// GOAL: given the query [parc, csl, spencer] to group [global, parc]
+		// we wish to produce the full query [global, parc, csl, spencer].
+		// if a match is not possible (ie query = [att, csl, spencer]) then
+		// this group could not resolve the name, so it should return NULL.
+
+
+		// we know the groupname is full/final, so it MUST contain the root
+		// of the query somewhere. If not, then we can't possibly resolve it!
+		String firstGroup = query[0];
+		int startIndex;
+		for (startIndex = 0; startIndex < groupname.length; startIndex++) {
+			if (groupname[startIndex].equals(firstGroup)) {
 				break;
 			}
 		}
-		
-		if (startIndex == groups.length) {
-			System.err.println("CG " + fullName + ": getServiceName didn't find the name?");
+		if (startIndex == groupname.length) {
+			// could not find a match, so bail out!
 			return null;
 		}
-		
-		// HERE: startIndex has the first "hit" in the chordgroup fullname array
-		// The only way this function can operate is by going THROUGH the entire
-		// chordgroup's full name and finding it's first child. If this doesn't work,
-		// then there's an error! ie a ChordGroup of "parc.usa.global" can only answer
-		// queries for one level down, ie "XXX.parc.usa.global".
-		int retIndex = groups.length - startIndex;
-		if (retIndex < 0 || servicegroups.length <= retIndex) {
-			System.err.println("CG " + fullName + ": getServiceName bounds error");
-			return null;
+
+		String[] ret = new String[query.length + startIndex];
+		// first, fill-in the values from the groupname
+		for (int i = 0; i < startIndex; i++) {
+			ret[i] = groupname[i];
 		}
-		
-		// double-check but every entry here should be equal!
-		for (int i = 0; i < retIndex; i++) {
-			if (!servicegroups[i].equals(groups[startIndex + i])) {
-				System.err.println("CG " + fullName + ": getServiceName could not make sense of groups");
-				return null;
-			}
+
+		//next, complete the array with values from the query
+		for (int i = 0; i < query.length; i++) {
+			ret[i + startIndex] = query[i];
 		}
-		
-		return servicegroups[retIndex];
-		// Chord CANNOT answer anything at all for "*.att.usa.global", "*.usa.global", etc.
-		// Find a way to forward up? Maybe a key for "parent"?
+
+		return ret;
 	}
-	
+
 	// for interface display
 	public final String toString() {
 		return fullName;

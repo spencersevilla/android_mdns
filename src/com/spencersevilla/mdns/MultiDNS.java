@@ -78,19 +78,6 @@ public class MultiDNS {
 		}
 	}
 
-	public void setName(String name) {
-		// only allow this to be set ONCE!
-		if (hostname != null) {
-			return;
-		}
-
-		hostname = name;
-	}
-
-	protected String getName() {
-		return hostname;
-	}
-
 	public void setAddr(String addr) {
 		// only allow this to be set ONCE!
 		if (address != null) {

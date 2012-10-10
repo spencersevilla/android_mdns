@@ -178,7 +178,7 @@ public class ChordGroup extends DNSGroup {
 		
 		System.out.println("CG " + fullName + ": resolving " + name);
 
-		// STEP 1: PRODUCE A SERVICENAME!
+		// STEP 1: Produce the key we're looking for!
 		String servicename = getServiceName(name);
 		
 		Set set;
@@ -275,6 +275,14 @@ public class ChordGroup extends DNSGroup {
 		}
 		
 		System.out.println("CG " + fullName + ": created chord, serving at " + laddr + ":"+ lport);
+
+		// WE created a chord that's not top-level! register ourself as the 
+		// "parent" of this group since, presumably, we are a member of the
+		// parent-group and can forward traffic onward appropriately.
+		if (groups.length > 1) {
+			Service s = new Service("parent", 0, mdns);
+			serviceRegistered(s);
+		}
 	}
 	
 	private void joinChord() {
