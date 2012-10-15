@@ -45,7 +45,7 @@ public class MultiDNS {
 		// loadGroups();
 
 		// here we initialize (but don't start) all of the servers.
-        bs = new BootstrapServer(this);
+        // bs = new BootstrapServer(this);
 		igs = new InterGroupServer(this);
 
 		System.out.println("MDNS: initialized!");
@@ -53,13 +53,13 @@ public class MultiDNS {
 
 	// This function can go back-and-forth with start() and stop()
 	public void start() throws Exception {
-		bs.start();
+		// bs.start();
 		igs.start();
 		System.out.println("MDNS: started!");
 	}
 	
 	public void stop() throws Exception {
-		bs.stop();
+		// bs.stop();
 		igs.stop();
 		System.out.println("MDNS: stopped!");
 
@@ -187,8 +187,10 @@ public class MultiDNS {
 	}
 	
 	public void findOtherGroups() {
-		ArrayList<DNSGroup> groups = bs.findGroups();
-		
+		// ArrayList<DNSGroup> groups = bs.findGroups();
+		ArrayList<DNSGroup> groups = null;
+		System.out.println("ERROR: BootstrapServer IS DISABLED!");
+
 		if (groups == null) {
 			return;
 		}
