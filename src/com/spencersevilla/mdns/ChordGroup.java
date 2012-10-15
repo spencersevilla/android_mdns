@@ -13,8 +13,9 @@ import de.uniba.wiai.lspi.chord.service.impl.ChordImpl;
 import de.uniba.wiai.lspi.chord.service.Chord;
 
 // implement DNSGroup, Runnable later on
-public class ChordGroup extends DNSGroup {
+public class ChordGroup extends DNSGroup implements Runnable {
 	public static int id = 1;
+	private Thread thread;
 	private Chord chord;
 	private boolean running;
 	public String laddr = null;
@@ -57,17 +58,24 @@ public class ChordGroup extends DNSGroup {
 	}
 
 	public void start() {
+		// WE are the server so start it up! (on its own thread)
+		thread = new Thread(this);
+		thread.start();
+	}
+
+	public void run() {
 		InetAddress a = mdns.getAddr();
+		if (a == null) {
+			a = Service.generateAddress();
+		}
+
 		if (a != null) {
 			laddr = a.getHostName();
 		}
+
 		if (laddr == null) {
-			try {
-				laddr = InetAddress.getLocalHost().getHostName();
-			} catch (Exception e) {
-				System.err.println("CG " + fullName + " start: getLocalHost failed?");
+				System.err.println("CG " + fullName + " start: no IP address?");
 				return;
-			}
 		}
 		
 		if (lport == 0) {
@@ -257,7 +265,7 @@ public class ChordGroup extends DNSGroup {
 	
 	// Chord-specific functions! =======================================================
 	private void createChord() {
-		de.uniba.wiai.lspi.chord.service.PropertiesLoader.loadPropertyFile();
+		// de.uniba.wiai.lspi.chord.service.PropertiesLoader.loadPropertyFile();
 		String protocol = URL.KNOWN_PROTOCOLS.get(URL.SOCKET_PROTOCOL);
 		URL localURL = null;
 		
@@ -286,7 +294,7 @@ public class ChordGroup extends DNSGroup {
 	}
 	
 	private void joinChord() {
-		de.uniba.wiai.lspi.chord.service.PropertiesLoader.loadPropertyFile();
+		// de.uniba.wiai.lspi.chord.service.PropertiesLoader.loadPropertyFile();
 		String protocol = URL.KNOWN_PROTOCOLS.get(URL.SOCKET_PROTOCOL);
 		URL localURL = null;
 		URL joinURL = null;
