@@ -399,6 +399,10 @@ class InterGroupThread extends Thread {
 	// this function forwards the query onto an ACTUAL DNS server and then just
 	// returns whatever message it's given
 	byte [] queryRegularDNS(Message query) {
+		if (server.dns_addrs.isEmpty()) {
+			return null;
+		}
+
 		InetAddress dns_server = server.dns_addrs.get(0);
 		if (dns_server == null) {
 			return null;
