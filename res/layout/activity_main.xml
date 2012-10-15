@@ -41,7 +41,7 @@
 		    android:layout_below="@+id/group_list"
 		    android:layout_toLeftOf="@+id/refresh_list"
 		    android:layout_marginLeft="10dip"
-		    android:text="New AdHoc Group"
+		    android:text="enter group_string here!"
 		 	android:onClick="newGroup" />
 
 		

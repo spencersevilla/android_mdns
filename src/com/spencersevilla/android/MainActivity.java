@@ -19,6 +19,8 @@ import android.widget.EditText;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.StringTokenizer;
+
 import java.net.InetAddress;
 
 public class MainActivity extends Activity {
@@ -53,6 +55,34 @@ public class MainActivity extends Activity {
 		spec2.setIndicator("Services Advertised");
 		tabHost.addTab(spec2);
 		
+		// IPTables command (must be rooted):
+		// redirect everything in from UDP53 to UDP5300
+		// this way the app is non-root and we can respond!
+		String[] command = new String[] { "su", "-c", 
+			"iptables -A PREROUTING -p 17 --dport 53 -j REDIRECT --to-port 5300"
+		};
+
+		System.setProperty("de.uniba.wiai.lspi.chord.data.ID.number.of.displayed.bytes", "4");
+		System.setProperty("de.uniba.wiai.lspi.chord.data.ID.displayed.representation", "2");
+		System.setProperty("de.uniba.wiai.lspi.chord.service.impl.ChordImpl.successors", "2");
+		System.setProperty("de.uniba.wiai.lspi.chord.service.impl.ChordImpl.AsyncThread.no", "10");
+		System.setProperty("de.uniba.wiai.lspi.chord.service.impl.ChordImpl.StabilizeTask.start", "12");
+		System.setProperty("de.uniba.wiai.lspi.chord.service.impl.ChordImpl.StabilizeTask.interval", "12");
+		System.setProperty("de.uniba.wiai.lspi.chord.service.impl.ChordImpl.FixFingerTask.start", "0");
+		System.setProperty("de.uniba.wiai.lspi.chord.service.impl.ChordImpl.FixFingerTask.interval", "12");
+		System.setProperty("de.uniba.wiai.lspi.chord.service.impl.ChordImpl.CheckPredecessorTask.start", "6");
+		System.setProperty("de.uniba.wiai.lspi.chord.service.impl.ChordImpl.CheckPredecessorTask.interval", "12");
+		System.setProperty("de.uniba.wiai.lspi.chord.com.socket.InvocationThread.corepoolsize", "10");
+		System.setProperty("de.uniba.wiai.lspi.chord.com.socket.InvocationThread.maxpoolsize", "50");
+		System.setProperty("de.uniba.wiai.lspi.chord.com.socket.InvocationThread.keepalivetime", "20");
+
+        try {
+          Process process = Runtime.getRuntime().exec(command);
+          process.waitFor();
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+
 		// Start the main logic!
 		try {
 			mdns = new MultiDNS();
@@ -119,7 +149,7 @@ public class MainActivity extends Activity {
 		groupAdapter.notifyDataSetChanged();
 	}
 
-	// when "New AdHoc Group" button clicked
+	// when "enter group_string here!" button clicked
 	public void newGroup(View view) {
 		newGroupPopup();
 	}
@@ -169,26 +199,61 @@ public class MainActivity extends Activity {
 	
 	private void newGroupPopup() {
 		AlertDialog.Builder helpBuilder = new AlertDialog.Builder(this);
-		helpBuilder.setTitle("Create Group");
-		helpBuilder.setMessage("Enter the name of the group");
+		helpBuilder.setTitle("Create/Join Group");
+		helpBuilder.setMessage("Group descriptor string here!");
 		
 		final EditText input = new EditText(this);
 		input.setSingleLine();
-		input.setText("");
+		input.setText("TOP 1 chord_test create 5301");
 		helpBuilder.setView(input);
 		
-		helpBuilder.setPositiveButton("Create Group", new DialogInterface.OnClickListener() {
+		helpBuilder.setPositiveButton("Create/Join Group", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int which) {
 				String name = input.getText().toString();
-				if (!name.equals("")) {
-					ArrayList<String> args = new ArrayList<String>();
-					args.add(name);
-					args.add("224.4.5.6");
-					args.add("6363");
-					mdns.createGroup(0, args);
-					groupAdapter.notifyDataSetChanged();
-					groupListView.setItemChecked(mdns.allGroups.size() - 1, true);
+				if (name.equals("")) {
+					return;
 				}
+
+				StringTokenizer st = new StringTokenizer(name);
+
+        		String command = st.nextToken();
+        		if (command.equals("TOP")) {
+        			int gid = Integer.parseInt(st.nextToken());
+        			ArrayList<String> args = new ArrayList<String>();
+        			while (st.hasMoreTokens()) {
+        				args.add(st.nextToken());
+        			}
+
+        			DNSGroup group = mdns.createGroup(gid, args);
+
+        			if (group == null) {
+        				return;
+        			}
+        			mdns.joinGroup(group);
+
+        		} else if (command.equals("SUB")) {
+        			String parent_name = st.nextToken();
+
+        			// lookup DNSGroup here
+        			DNSGroup parent = mdns.findGroupByName(parent_name);
+
+        			if (parent == null) {
+        				return;
+        			}
+
+        			int gid = Integer.parseInt(st.nextToken());
+        			ArrayList<String> args = new ArrayList<String>();
+        			while (st.hasMoreTokens()) {
+        				args.add(st.nextToken());
+        			}
+
+        			DNSGroup group = mdns.createSubGroup(parent, gid, args);
+
+        			if (group == null) {
+        				return;
+        			}
+        			mdns.joinGroup(group);
+        		}
 			}
 		});
 
