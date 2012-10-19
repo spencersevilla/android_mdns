@@ -204,7 +204,7 @@ public class MainActivity extends Activity {
 		
 		final EditText input = new EditText(this);
 		input.setSingleLine();
-		input.setText("TOP 1 chord_test create 5301");
+		input.setText("TOP 1 chord.test_top join 10.42.0.50 5301 5301");
 		helpBuilder.setView(input);
 		
 		helpBuilder.setPositiveButton("Create/Join Group", new DialogInterface.OnClickListener() {

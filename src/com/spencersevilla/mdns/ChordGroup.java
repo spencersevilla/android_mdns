@@ -70,7 +70,7 @@ public class ChordGroup extends DNSGroup implements Runnable {
 		}
 
 		if (a != null) {
-			laddr = a.getHostName();
+			laddr = a.getHostAddress();
 		}
 
 		if (laddr == null) {
