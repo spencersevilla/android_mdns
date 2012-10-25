@@ -97,10 +97,10 @@ public class MultiDNS {
 		return address;
 	}
 
-	public void addDNSServer(String name, String address) {
+	public void addDNSServer(String address) {
 		try {
 			InetAddress addr = InetAddress.getByName(address);
-			igs.addDNSServer(name, addr);
+			igs.addDNSServer(addr);
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}
@@ -267,6 +267,11 @@ public class MultiDNS {
 			group.serviceRegistered(s);
 		}
 		
+		try{
+			Thread.sleep(1000);
+		} catch (Exception e) {
+			// do nothing; continue normally
+		}
 		// saveGroups();
 	}
 	
@@ -474,5 +479,75 @@ public class MultiDNS {
 		
 	public void shutDown() {
 		System.exit(0);
+	}
+
+	public void readCommandLine(String commandline) {
+		try {
+			StringTokenizer st = new StringTokenizer(commandline);
+
+	       	String type = st.nextToken();
+	       	// for our commenting lines!
+	       	if (type.charAt(0) == '#')
+				return;
+
+			if (type.equals("ADDR")) {
+				String addr = st.nextToken();
+				setAddr(addr);
+				
+			} else if (type.equals("SERVICE")) {
+	    		String servicename = st.nextToken();
+	    		createService(servicename);
+
+
+			} else if (type.equals("DNS")) {
+				String addr = st.nextToken();
+				addDNSServer(addr);
+
+			} else if (type.equals("GROUP")) {
+
+				String command = st.nextToken();
+				if (command.equals("TOP")) {
+					int gid = Integer.parseInt(st.nextToken());
+					ArrayList<String> args = new ArrayList<String>();
+					while (st.hasMoreTokens()) {
+						args.add(st.nextToken());
+					}
+
+					DNSGroup group = createGroup(gid, args);
+
+					if (group == null) {
+						throw new RuntimeException();
+					}
+					
+					joinGroup(group);
+
+				} else if (command.equals("SUB")) {
+					String parent_name = st.nextToken();
+
+					// lookup DNSGroup here
+					DNSGroup parent = findGroupByName(parent_name);
+
+					if (parent == null) {
+						throw new RuntimeException();
+					}
+
+					int gid = Integer.parseInt(st.nextToken());
+					ArrayList<String> args = new ArrayList<String>();
+					while (st.hasMoreTokens()) {
+						args.add(st.nextToken());
+					}
+
+					DNSGroup group = createSubGroup(parent, gid, args);
+
+					if (group == null) {
+						throw new RuntimeException();
+					}
+
+					joinGroup(group);
+				}
+			}
+		} catch (RuntimeException e) {
+			System.out.println("MDNS: error: could not parse command line: " + commandline);
+		}
 	}
 }

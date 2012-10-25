@@ -16,7 +16,7 @@ import android.widget.TabHost.TabSpec;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.widget.EditText;
-
+import android.os.AsyncTask;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.StringTokenizer;
@@ -214,46 +214,7 @@ public class MainActivity extends Activity {
 					return;
 				}
 
-				StringTokenizer st = new StringTokenizer(name);
-
-        		String command = st.nextToken();
-        		if (command.equals("TOP")) {
-        			int gid = Integer.parseInt(st.nextToken());
-        			ArrayList<String> args = new ArrayList<String>();
-        			while (st.hasMoreTokens()) {
-        				args.add(st.nextToken());
-        			}
-
-        			DNSGroup group = mdns.createGroup(gid, args);
-
-        			if (group == null) {
-        				return;
-        			}
-        			mdns.joinGroup(group);
-
-        		} else if (command.equals("SUB")) {
-        			String parent_name = st.nextToken();
-
-        			// lookup DNSGroup here
-        			DNSGroup parent = mdns.findGroupByName(parent_name);
-
-        			if (parent == null) {
-        				return;
-        			}
-
-        			int gid = Integer.parseInt(st.nextToken());
-        			ArrayList<String> args = new ArrayList<String>();
-        			while (st.hasMoreTokens()) {
-        				args.add(st.nextToken());
-        			}
-
-        			DNSGroup group = mdns.createSubGroup(parent, gid, args);
-
-        			if (group == null) {
-        				return;
-        			}
-        			mdns.joinGroup(group);
-        		}
+				mdns.readCommandLine(name);
 			}
 		});
 
@@ -278,16 +239,14 @@ public class MainActivity extends Activity {
 		input.setText("");
 		helpBuilder.setView(input);
 		
+		final MainActivity p = this;
+
 		helpBuilder.setPositiveButton("Resolve Service", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int which) {
-				String name = input.getText().toString();
+				final String name = input.getText().toString();
 				if (!name.equals("")) {
-					InetAddress addr = mdns.resolveService(name);
-					if (addr == null) {
-						couldNotResolve(name);
-					} else {
-						resolvedService(name, addr.getHostAddress());
-					}
+					// Avoid NetworkOnMainThreadException here
+					new ResolveTask(p).execute(name);
 				}
 			}
 		});
@@ -303,7 +262,7 @@ public class MainActivity extends Activity {
 		helpDialog.show();
 	}
 	
-	private void resolvedService(String service, String addr) {
+	protected void resolvedService(String service, String addr) {
 		AlertDialog.Builder helpBuilder = new AlertDialog.Builder(this);
 		helpBuilder.setTitle("Resolve Service");
 		helpBuilder.setMessage("Request for " + service + " returned " + addr);
@@ -317,7 +276,7 @@ public class MainActivity extends Activity {
 		helpDialog.show();
 	}
 
-	private void couldNotResolve(String service) {
+	protected void couldNotResolve(String service) {
 		AlertDialog.Builder helpBuilder = new AlertDialog.Builder(this);
 		helpBuilder.setTitle("Resolve Service");
 		helpBuilder.setMessage("Request for " + service + " failed.");
@@ -329,5 +288,29 @@ public class MainActivity extends Activity {
 		// Remember, create doesn't show the dialog
 		AlertDialog helpDialog = helpBuilder.create();
 		helpDialog.show();
+	}
+}
+
+class ResolveTask extends AsyncTask<String, Void, InetAddress> {
+	MainActivity parent;
+	String name;
+
+	public ResolveTask(MainActivity p) {
+		parent = p;
+	}
+
+	@Override
+    protected InetAddress doInBackground(String... names) {
+    	name = names[0];
+		return parent.mdns.resolveService(name);
+	}
+
+	@Override
+	protected void onPostExecute(InetAddress result) {               
+		if (result == null) {
+			parent.couldNotResolve(name);
+		} else {
+			parent.resolvedService(name, result.getHostAddress());
+		}
 	}
 }
