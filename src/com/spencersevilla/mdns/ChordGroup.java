@@ -101,8 +101,8 @@ public class ChordGroup extends DNSGroup implements Runnable {
 	}
 
 	public void stop() {
-		for (Service s : services) {
-			serviceRemoved(s);
+		for (Iterator<Service> it = services.iterator(); it.hasNext(); ) {
+			serviceRemoved(it);
 		}
 
 		System.out.println("CG " + fullName + ": stopped.");
@@ -187,6 +187,26 @@ public class ChordGroup extends DNSGroup implements Runnable {
 		}
 	}
 	
+	public void serviceRemoved(Iterator<Service> it) {
+		
+		Service s = it.next();
+		if (chord == null) {
+			System.err.println("CG " + fullName + " serviceRemoved error: chord == null");
+			return;
+		}
+		
+		StringKey key = new StringKey(s.name);
+		it.remove();
+		
+		try {
+			chord.remove(key, s.addr);
+			System.out.println("CG " + fullName + ": removed " + s.addr + " for key: " + s.name);
+		} catch (Exception e) {
+			System.err.println("CG " + fullName + " error: could not remove " + s.addr + " for key: " + s.name);
+			e.printStackTrace();
+		}
+	}
+
 	public InetAddress resolveService(String name) {
 		return resolveService(name, 0);
 	}
