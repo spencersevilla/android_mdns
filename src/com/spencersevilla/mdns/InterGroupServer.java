@@ -19,14 +19,12 @@ public class InterGroupServer implements Runnable {
 	private boolean listening;
 	private volatile boolean running;
 	protected ArrayList<InterGroupThread> threads;
-	protected ArrayList<Name> dns_names;
 	protected ArrayList<InetAddress> dns_addrs;
 
 	InterGroupServer(MultiDNS m) throws Exception {
 		mdns = m;
 		threads = new ArrayList<InterGroupThread>();
 		socket = new DatagramSocket(port);
-		dns_names = new ArrayList<Name>();
 		dns_addrs = new ArrayList<InetAddress>();
 	}
 
@@ -54,20 +52,11 @@ public class InterGroupServer implements Runnable {
 		}
 	}
 
-	public void addDNSServer(String sname, InetAddress addr) {
-		if (sname == null || addr == null) {
+	public void addDNSServer(InetAddress addr) {
+		if (addr == null) {
 			return;
 		}
-
-		try {
-			Name name = new Name(sname);
-			dns_names.add(name);
-			dns_addrs.add(addr);
-		} catch (TextParseException e) {
-			System.err.println("could not create DNS Name from string " + sname);
-			return;
-		}
-
+		dns_addrs.add(addr);
 	}
 
 	public void run() {
@@ -347,29 +336,6 @@ class InterGroupThread extends Thread {
 			// and we want to return the pointer to the next server?
 		}
 		return Rcode.REFUSED;
-	}
-
-	byte generateReferral(Record query, Message response, int flags) {
-		// This function returns a list of all other DNS servers we're aware of.
-		// The presumption is that this TLD is not our domain, so we will
-		// hook into the "traditional" DNS hierarchy to see if they might
-		// have an answer. If it's not supported by them, then let THEM say so.
-		// Note that we're returning the list of DNS servers and then we're done with
-		// it... this is an example of non-recursive response.
-		Name name = query.getName();
-		int ttl = 0;
-
-		for (int i = 0; i < server.dns_names.size(); i++) {
-			byte[] rdata_auth = server.dns_names.get(i).toWireCanonical();
-			byte[] rdata_addl = server.dns_addrs.get(i).getAddress();
-			Record auth = Record.newRecord(name, Type.NS, DClass.IN, ttl, rdata_auth);
-			Record addl = Record.newRecord(server.dns_names.get(i), Type.A, DClass.IN, ttl, rdata_addl);
-
-			response.addRecord(auth, Section.AUTHORITY);
-			response.addRecord(addl, Section.ADDITIONAL);
-		}
-
-		return Rcode.NOERROR;
 	}
 
 	boolean shouldForward(Message query) {
