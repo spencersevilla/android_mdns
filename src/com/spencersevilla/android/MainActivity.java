@@ -102,7 +102,7 @@ public class MainActivity extends Activity {
 		
 		groupListView = (ListView)findViewById(R.id.group_list);
 		groupAdapter = new ArrayAdapter<DNSGroup>(this, 
-				android.R.layout.simple_list_item_multiple_choice, mdns.allGroups);
+				android.R.layout.simple_list_item_1, mdns.allGroups);
 		groupAdapter.setNotifyOnChange(true);
 		
 		groupListView.setAdapter(groupAdapter);
@@ -111,16 +111,11 @@ public class MainActivity extends Activity {
 
 		groupListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 			@Override public void onItemClick(AdapterView<?> arg0, View arg1, int position, long id) {
-				CheckedTextView ctv = (CheckedTextView)arg1;
+				TextView tv = (TextView)arg1;
 				DNSGroup dg = (DNSGroup) groupListView.getItemAtPosition(position);
-				if (ctv.isChecked()) {
-					mdns.leaveGroup(dg);
-				} else {
-					System.out.println("JOINING GROUP!!!");
-					mdns.joinGroup(dg);
-				}
-				
-				groupAdapter.notifyDataSetChanged();
+				System.out.println("clicked!");
+				// mdns.leaveGroup(dg);
+				// groupAdapter.notifyDataSetChanged();
 			}
 		});
 	}
@@ -129,7 +124,7 @@ public class MainActivity extends Activity {
 		
 		serviceListView = (ListView)findViewById(R.id.service_list);
 		serviceAdapter = new ArrayAdapter<Service>(this, 
-				android.R.layout.simple_list_item_multiple_choice, mdns.serviceList);
+				android.R.layout.simple_list_item_1, mdns.serviceList);
 		serviceListView.setAdapter(serviceAdapter);
 		serviceListView.setItemsCanFocus(false);
 		serviceListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
@@ -137,8 +132,8 @@ public class MainActivity extends Activity {
 		serviceListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 			@Override
 			public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
-				CheckedTextView ctv = (CheckedTextView)arg1;
-				System.out.println("hi!");
+				TextView tv = (TextView)arg1;
+				System.out.println("clicked!");
 			}
 		});
 	}
@@ -204,7 +199,7 @@ public class MainActivity extends Activity {
 		
 		final EditText input = new EditText(this);
 		input.setSingleLine();
-		input.setText("TOP 1 chord.test_top join 10.42.0.50 5301 5301");
+		input.setText("GROUP TOP 1 ccrg.ucsc.global join 10.42.0.50 5301 10.42.0.5 5301");
 		helpBuilder.setView(input);
 		
 		helpBuilder.setPositiveButton("Create/Join Group", new DialogInterface.OnClickListener() {
