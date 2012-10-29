@@ -105,14 +105,17 @@ public class InterGroupServer implements Runnable {
 
 			System.out.println("IGS: requesting " + servicename + " from " + addr + ":" + port);
 
+			long start_time = System.currentTimeMillis();
 			sock.send(sendpack);
 
 			// Timeout Breaks Here!
 			sock.receive(recpack);
+			long elapsed_millis = System.currentTimeMillis() - start_time;
+
 			Message m = new Message(recpack.getData());
 			InetAddress result = parseResponse(m);
 
-			System.out.println("IGS: " + addr + ":" + port + " returned " + result + " for " + servicename);
+			System.out.println("IGS: " + addr + ":" + port + " returned " + result + " for " + servicename + " in " + elapsed_millis + " milliseconds.");
 
 			return result;
 		} catch (SocketTimeoutException e) {

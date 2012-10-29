@@ -223,10 +223,14 @@ public class ChordGroup extends DNSGroup implements Runnable {
 		String servicename = getServiceName(name);
 		
 		Set set;
+		long elapsed_millis = 0;
 		StringKey key = new StringKey(servicename);
 		
+		long start_time = System.currentTimeMillis();
 		try {
 			set = chord.retrieve(key);
+			elapsed_millis = System.currentTimeMillis() - start_time;
+
 		} catch (Exception e) {
 			System.err.println("CG " + fullName + " error: chord.retrieve!");
 			e.printStackTrace();
@@ -249,11 +253,11 @@ public class ChordGroup extends DNSGroup implements Runnable {
 		// was the ACTUAL end-product, return it. Otherwise, forward
 		// the request onto THIS query!
 		String[] servicegroups = name.split("\\.");
-		
+		System.out.println("CG: request for " + servicename + " took " + elapsed_millis + " milliseconds.");
 		if (servicename.equals(servicegroups[0])) {
 			try {
 				InetAddress result = InetAddress.getByName(res);
-				System.out.println("CG " + fullName + ": returning " + result + "for " + name);
+				System.out.println("CG " + fullName + ": returning " + result + " for " + name);
 				return result;
 			} catch (UnknownHostException e) {
 				e.printStackTrace();
