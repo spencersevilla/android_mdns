@@ -241,7 +241,7 @@ public class MultiDNS {
 	}
 
 	public void leaveGroup(DNSGroup g) {
-		g.exit();
+		g.stop();
 		groupList.remove(g);
 	}
 	

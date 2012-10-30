@@ -102,7 +102,7 @@ public class MainActivity extends Activity {
 		
 		groupListView = (ListView)findViewById(R.id.group_list);
 		groupAdapter = new ArrayAdapter<DNSGroup>(this, 
-				android.R.layout.simple_list_item_1, mdns.allGroups);
+				android.R.layout.simple_list_item_1, mdns.groupList);
 		groupAdapter.setNotifyOnChange(true);
 		
 		groupListView.setAdapter(groupAdapter);
@@ -171,12 +171,13 @@ public class MainActivity extends Activity {
 		input.setText("");
 		helpBuilder.setView(input);
 		
+		final MainActivity p = this;
+
 		helpBuilder.setPositiveButton("Create Service", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int which) {
 				String name = input.getText().toString();
 				if (!name.equals("")) {
-					mdns.createService(name);
-					serviceAdapter.notifyDataSetChanged();
+					new RegisterTask(p).execute(name);
 				}
 			}
 		});
@@ -222,6 +223,16 @@ public class MainActivity extends Activity {
 		// Remember, create doesn't show the dialog
 		AlertDialog helpDialog = helpBuilder.create();
 		helpDialog.show();
+	}
+
+	public void leaveTopGroup(View view) {
+		if (mdns.groupList.isEmpty()) {
+			System.out.println("EMPTY!");
+			return;
+		}
+
+		DNSGroup group = mdns.groupList.get(0);
+		new LeaveGroupTask(this).execute(group);
 	}
 	
 	private void resolveServicePopup() {
@@ -283,6 +294,48 @@ public class MainActivity extends Activity {
 		// Remember, create doesn't show the dialog
 		AlertDialog helpDialog = helpBuilder.create();
 		helpDialog.show();
+	}
+}
+
+class RegisterTask extends AsyncTask<String, Void, Void> {
+	MainActivity parent;
+	String name;
+
+	public RegisterTask(MainActivity p) {
+		parent = p;
+	}
+
+	@Override
+    protected Void doInBackground(String... names) {
+    	name = names[0];
+		parent.mdns.createService(name);
+		return null;
+	}
+
+	@Override
+	protected void onPostExecute(Void v) {
+		parent.serviceAdapter.notifyDataSetChanged();
+	}
+}
+
+class LeaveGroupTask extends AsyncTask<DNSGroup, Void, Void> {
+	MainActivity parent;
+	DNSGroup group;
+
+	public LeaveGroupTask(MainActivity p) {
+		parent = p;
+	}
+
+	@Override
+    protected Void doInBackground(DNSGroup... groups) {
+    	group = groups[0];
+		parent.mdns.leaveGroup(group);
+		return null;
+	}
+
+	@Override
+	protected void onPostExecute(Void v) {               
+		parent.groupAdapter.notifyDataSetChanged();
 	}
 }
 
